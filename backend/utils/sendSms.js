@@ -4,8 +4,8 @@ const twilio = require('twilio');
 
 const sendSms = async (phoneNumber,otp) => {
    try {
-      const accountSid = 'ACfab36b321eb362c4cd616fe27de692bc' // Your Account SID from Twilio Console
-  const authToken = '962393d3083fd3c9240c644eba06c248';   // Your Auth Token from Twilio Console
+      const accountSid = process.env.TWILIO_ACCOUNT_SID// Your Account SID from Twilio Console
+  const authToken = process.env.TWILIO_ACCOUNT_TOKEN;   // Your Auth Token from Twilio Console
   
   const client = new twilio(accountSid, authToken);
       // const formattedNumber = phoneNumber.startsWith('+') ? phoneNumber : `+${phoneNumber}`;
