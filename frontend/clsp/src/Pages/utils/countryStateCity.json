@@ -1,0 +1,36 @@
+{
+    "IN": {
+      "name": "India",
+      "states": [
+        {"code": "AP", "name": "Andhra Pradesh", "cities": ["Visakhapatnam", "Vijayawada", "Guntur", "Nellore"]},
+        {"code": "AR", "name": "Arunachal Pradesh", "cities": ["Itanagar", "Naharlagun"]},
+        {"code": "AS", "name": "Assam", "cities": ["Guwahati", "Dibrugarh", "Silchar", "Jorhat"]},
+        {"code": "BR", "name": "Bihar", "cities": ["Patna", "Gaya", "Bhagalpur", "Muzaffarpur"]},
+        {"code": "CG", "name": "Chhattisgarh", "cities": ["Raipur", "Bhilai", "Bilaspur", "Korba"]},
+        {"code": "GA", "name": "Goa", "cities": ["Panaji", "Margao", "Vasco da Gama"]},
+        {"code": "GJ", "name": "Gujarat", "cities": ["Ahmedabad", "Surat", "Vadodara", "Rajkot"]},
+        {"code": "HR", "name": "Haryana", "cities": ["Chandigarh", "Faridabad", "Gurgaon", "Hisar"]},
+        {"code": "HP", "name": "Himachal Pradesh", "cities": ["Shimla", "Manali", "Dharamshala", "Solan"]},
+        {"code": "JH", "name": "Jharkhand", "cities": ["Ranchi", "Jamshedpur", "Dhanbad", "Bokaro"]},
+        {"code": "KA", "name": "Karnataka", "cities": ["Bangalore", "Mysore", "Mangalore", "Hubli"]},
+        {"code": "KL", "name": "Kerala", "cities": ["Thiruvananthapuram", "Kochi", "Kozhikode", "Thrissur"]},
+        {"code": "MP", "name": "Madhya Pradesh", "cities": ["Bhopal", "Indore", "Gwalior", "Jabalpur", "Ujjain", "Guna"]},
+        {"code": "MH", "name": "Maharashtra", "cities": ["Mumbai", "Pune", "Nagpur", "Nashik", "Aurangabad"]},
+        {"code": "MN", "name": "Manipur", "cities": ["Imphal"]},
+        {"code": "ML", "name": "Meghalaya", "cities": ["Shillong", "Tura"]},
+        {"code": "MZ", "name": "Mizoram", "cities": ["Aizawl", "Lunglei"]},
+        {"code": "NL", "name": "Nagaland", "cities": ["Kohima", "Dimapur"]},
+        {"code": "OD", "name": "Odisha", "cities": ["Bhubaneswar", "Cuttack", "Rourkela", "Puri"]},
+        {"code": "PB", "name": "Punjab", "cities": ["Amritsar", "Ludhiana", "Jalandhar", "Patiala"]},
+        {"code": "RJ", "name": "Rajasthan", "cities": ["Jaipur", "Jodhpur", "Udaipur", "Kota"]},
+        {"code": "SK", "name": "Sikkim", "cities": ["Gangtok"]},
+        {"code": "TN", "name": "Tamil Nadu", "cities": ["Chennai", "Coimbatore", "Madurai", "Tiruchirappalli"]},
+        {"code": "TG", "name": "Telangana", "cities": ["Hyderabad", "Warangal", "Nizamabad", "Karimnagar"]},
+        {"code": "TR", "name": "Tripura", "cities": ["Agartala"]},
+        {"code": "UP", "name": "Uttar Pradesh", "cities": ["Lucknow", "Kanpur", "Varanasi", "Agra"]},
+        {"code": "UK", "name": "Uttarakhand", "cities": ["Dehradun", "Haridwar", "Nainital", "Rishikesh"]},
+        {"code": "WB", "name": "West Bengal", "cities": ["Kolkata", "Howrah", "Durgapur", "Asansol"]}
+      ]
+    }
+  }
+  

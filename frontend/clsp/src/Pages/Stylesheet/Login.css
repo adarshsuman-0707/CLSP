@@ -1,0 +1,110 @@
+.bg-image {
+    background:  linear-gradient(rgba(219, 220, 222, 0.441), rgba(47, 84, 148, 0.638)),url('../../assesst/plumber.jpg') no-repeat center center;
+    background-size: cover;
+  }
+
+.bg-image1 {
+  background: linear-gradient(rgba(77, 78, 81, 0.441), rgba(47, 84, 148, 0.638)), 
+  url('../../assesst/carpentertools.png');
+  /* min-height: 100vh; */
+  padding: 20px 0;
+  background-repeat: repeat;
+  background-size:cover;
+  background-position: center;
+  background-attachment: fixed;
+  object-fit: cover;
+
+}
+
+@media (max-width:768px) {
+  .bg-image1{
+    padding:0 30px 0 30px;
+  }
+}
+
+.form-label {
+  font-weight: 500;
+}
+
+.footer-section {
+  bottom: 0;
+}
+
+
+*{
+  scrollbar-width: none;
+}
+  .boxShadow{
+    /* box-sizing: border-box; */
+    box-shadow:  0 0 20px rgb(17, 13, 13);
+    padding: 50px;
+    margin-top: 5rem;
+    height: 100vh;
+  }
+  
+  .Linkpass{
+    font-size: 12px;
+    font-family:cursive;
+  }
+/* Signup page tweaks */
+
+
+.signup-card {
+  background: #ffffffa5;
+  border-radius: 10px;
+  padding: 30px;
+  margin-top: 4rem;
+  margin-bottom: 0; /* remove extra space */
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+/* Footer section spacing fix */
+
+/* Optional: if there's still a visible gap */
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.login-wrapper {
+  min-height: 100vh;
+  background-color: #f1f3f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 0; /* Remove padding-top since we're centering now */
+}
+
+
+.login-form-container {
+  width: 100%;
+  max-width: 420px;
+  padding: 40px;
+  height:400px;
+  margin-top:60px ;
+  background-color: rgba(255, 255, 255, 0.442);
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  animation: fadeIn 0.7s ease;
+}
+
+.small-links span,
+.small-links a {
+  font-size: 0.9rem;
+}
+
+/* Fade In Animation */
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(25px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  animation: fadeIn 0.7s ease-in-out forwards;
+}
