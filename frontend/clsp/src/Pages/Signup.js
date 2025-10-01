@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useForm } from "react-hook-form";
+import { set, useForm } from "react-hook-form";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "bootstrap/dist/css/bootstrap.min.css";
@@ -34,6 +34,7 @@ const Signup = () => {
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedState, setSelectedState] = useState("");
   const [pincode, setPincode] = useState("");
+  const[loading,setLoading]=useState(false)
   const countryList = Object.keys(countriesData);
   const stateList = selectedCountry ? countriesData[selectedCountry].states : [];
   const cityList =
@@ -44,17 +45,22 @@ const Signup = () => {
   const navigate = useNavigate();
 
   const requestEmail = async () => {
+    setLoading(true);
     try {
       await requestEmailOtp({ email });
+      
       setOtpSentEmail(true);
       toast.info("📧 Email OTP sent. Check your inbox!");
     } catch (error) {
       toast.error("❌ Failed to send email OTP. Try again!");
     }
+    finally{ setLoading(false); }
   };
 
   const verifyEmail = async () => {
     try {
+    setLoading(true);
+
       const response = await verifyEmailOtp({ email, otp: emailOtp });
       if (response.message === "Email verified successfully!") {
         setIsEmailVerified(true);
@@ -64,20 +70,23 @@ const Signup = () => {
       }
     } catch (error) {
       toast.error("❌ Error verifying email OTP.");
-    }
+    }finally{ setLoading(false); }  
   };
 
   const requestPhone = async () => {
     try {
+    setLoading(true);
+
       await requestPhoneOtp({ contact });
       setOtpSentPhone(true);
       toast.info("📲 Phone OTP sent. Check your SMS!");
     } catch (error) {
       toast.error("❌ Failed to send phone OTP. Try again!");
-    }
+    }finally{ setLoading(false); }
   };
 
   const verifyPhone = async () => {
+    setLoading(true);
     try {
       const response = await verifyPhoneOtp({ contact, otp: phoneOtp });
       if (response.message === "Phone verified successfully!") {
@@ -89,6 +98,7 @@ const Signup = () => {
     } catch (error) {
       toast.error("❌ Error verifying phone OTP.");
     }
+    finally { setLoading(false); }
   };
 
   const onSubmit = async (data) => {
@@ -99,19 +109,39 @@ const Signup = () => {
 
     try {
       console.log(data.role);
+    setLoading(true);
+
         await SignupUser(data);
         toast.success("🎉 Signup successful! You can now login.");
         navigate("/login");
       
     } catch (error) {
       toast.error("❌ Signup failed. Try again.");
-    }
+    } finally{ setLoading(false); }
   };
 
   return (
     <>
       <Navbar />
-      
+      {loading && (
+    <div className="Loading">
+    <div id="wifi-loader">
+    <svg class="circle-outer" viewBox="0 0 86 86">
+        <circle class="back" cx="43" cy="43" r="40"></circle>
+        <circle class="front" cx="43" cy="43" r="40"></circle>
+        <circle class="new" cx="43" cy="43" r="40"></circle>
+    </svg>
+    <svg class="circle-middle" viewBox="0 0 60 60">
+        <circle class="back" cx="30" cy="30" r="27"></circle>
+        <circle class="front" cx="30" cy="30" r="27"></circle>
+    </svg>
+    <svg class="circle-inner" viewBox="0 0 34 34">
+        <circle class="back" cx="17" cy="17" r="14"></circle>
+        <circle class="front" cx="17" cy="17" r="14"></circle>
+    </svg>
+    <div class="text" data-text="Connecting"></div>
+</div></div>
+  )}
       <section id="SignupPage" className="bg-image1">
         
         <div className="container py-5">

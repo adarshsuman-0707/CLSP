@@ -11,15 +11,17 @@ import Footer from "./Footer.js";
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 const navigate=useNavigate()
   const handleLogin = async (e) => {
     e.preventDefault();
-    
+    setLoading(true);
     try {
       const response = await LoginUser({
         email,
         password,
       });
+      
       console.log(response);
 
       if (response.message === "Login Succesfully") {
@@ -27,14 +29,20 @@ const navigate=useNavigate()
         localStorage.setItem("token",response.token)
         localStorage.setItem("serviceID",response.userData._id)
          localStorage.setItem("role",response.userData.role)
+         
         navigate('/')
 
         toast.success("✅ Login Successful!", { autoClose: 2000 });
+
       } else {
         toast.error("❌ Invalid Credentials. Try Again!", { autoClose: 2000 });
       }
     } catch (error) {
       toast.error("❌ Login Failed! Please check your details.", { autoClose: 2000 });
+    }
+    finally{
+    setLoading(false);
+
     }
   };
 
@@ -82,6 +90,25 @@ const navigate=useNavigate()
 <>
   <Navbar />
 
+  {loading && (
+    <div className="Loading">
+    <div id="wifi-loader">
+    <svg class="circle-outer" viewBox="0 0 86 86">
+        <circle class="back" cx="43" cy="43" r="40"></circle>
+        <circle class="front" cx="43" cy="43" r="40"></circle>
+        <circle class="new" cx="43" cy="43" r="40"></circle>
+    </svg>
+    <svg class="circle-middle" viewBox="0 0 60 60">
+        <circle class="back" cx="30" cy="30" r="27"></circle>
+        <circle class="front" cx="30" cy="30" r="27"></circle>
+    </svg>
+    <svg class="circle-inner" viewBox="0 0 34 34">
+        <circle class="back" cx="17" cy="17" r="14"></circle>
+        <circle class="front" cx="17" cy="17" r="14"></circle>
+    </svg>
+    <div class="text" data-text="Connecting"></div>
+</div></div>
+  )}
   <section className="login-wrapper d-flex justify-content-center bg-image1">
     <div className="login-form-container fade-in">
       <h3 className="text-center text-primary mb-4">Login</h3>

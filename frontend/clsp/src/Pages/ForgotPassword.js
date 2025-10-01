@@ -17,9 +17,15 @@ const ForgotPassword = () => {
   // 📌 Step 1: Request Password Reset OTP
   const handleRequestOtp = async () => {
     try {
-      await requestPasswordReset({ email });
+    let message=  await requestPasswordReset({ email });
+    console.log(message ,  "Forgot password related")
+    if(message==="User not found!"){
+         toast.error("Please Signup First");
+         navigate('/login')
+    }else{
       toast.success("OTP sent to your email!");
       setStep(2);
+    } 
     } catch (error) {
       toast.error(error);
     }

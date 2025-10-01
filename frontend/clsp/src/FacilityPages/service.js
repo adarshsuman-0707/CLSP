@@ -5,19 +5,20 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 const ServiceList = () => {
-  const token = localStorage.getItem('token'); // ✅ direct lo, ek hi baar
+  const token = localStorage.getItem('token'); 
   const [services, setServices] = useState([]);
   const [filteredServices, setFilteredServices] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(true);
+  const [timers, setTimers] = useState({}); // { slotId: remainingSeconds }
 
-  // ✅ Service fetch function
+  // Service fetch function
   const fetchServices = async () => {
     if (!token) return;
     setLoading(true);
     try {
       const data = await serviceall(token);
-      const serviceData = data?.services || data; // structure ke hisaab se
+      const serviceData = data?.services || data; 
       setServices(serviceData);
       setFilteredServices(serviceData);
     } catch (error) {
@@ -28,13 +29,11 @@ const ServiceList = () => {
     }
   };
 
-  // ✅ Initial fetch
   useEffect(() => {
     fetchServices();
   }, []);
 
-
-  // ✅ Search filter
+  // Search filter
   useEffect(() => {
     const filtered = services.filter(
       (service) =>
@@ -44,7 +43,21 @@ const ServiceList = () => {
     setFilteredServices(filtered);
   }, [searchTerm, services]);
 
-  // ✅ Booking function
+  // Countdown effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimers(prev => {
+        const updated = { ...prev };
+        Object.keys(updated).forEach(slotId => {
+          if (updated[slotId] > 0) updated[slotId] -= 1;
+        });
+        return updated;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Booking function
   const handleBookNow = async (serviceName, serviceId, slot) => {
     try {
       const booking = {
@@ -54,12 +67,19 @@ const ServiceList = () => {
       };
 
       const data = await servicerBookedByUser(serviceId, slot._id, token);
+      console.log("Booking Response:", data);
 
-      if (data) {
-        toast.success(
-          `✅ You booked ${booking.serviceName} on ${booking.date} at ${booking.time}.`
-        );
-        fetchServices(); // ⭐ Book ke baad dobara list fetch
+      if (data.message.includes("booked")) {
+        toast.success(`✅ You booked ${booking.serviceName} on ${booking.date} at ${booking.time}.`);
+        
+        // Start 2-minute timer for this slot
+        setTimers(prev => ({ ...prev, [slot._id]: 150 })); // 150 seconds
+
+        fetchServices(); // refresh service list
+      } else if (data.message.includes("cancelled")) {
+        toast.success(`✅ You Cancelled ${booking.serviceName} on ${booking.date} at ${booking.time}.`);
+        setTimers(prev => ({ ...prev, [slot._id]: 0 })); // reset timer
+        fetchServices();
       } else {
         toast.error(data?.message || "❌ Failed to book the service.");
       }
@@ -69,12 +89,16 @@ const ServiceList = () => {
     }
   };
 
+  const handleCancelBooking = async (serviceId, slotId) => {
+    // Simply call the same booking API to toggle cancel
+    const slot = filteredServices.flatMap(s => s.availableSlots).find(sl => sl._id === slotId);
+    if (!slot) return;
+    handleBookNow(slot.serviceName, serviceId, slot);
+  };
+
   return (
     <>
       <Navbar />
-      <br></br>
-      <br></br>
-      <br></br>
       <div className="container mt-5">
         <h2 className="mb-4">Available Services</h2>
 
@@ -121,21 +145,43 @@ const ServiceList = () => {
                     <p><strong>Duration:</strong> {service.duration}</p>
                     <h6>Available Slots:</h6>
                     <div className="row">
-                      {service.availableSlots.map((slot) => (
-                        <div className="col-md-6 mb-3" key={slot._id}>
-                          <div className="card p-3 shadow-sm h-100">
-                            <p><strong>Date:</strong> {new Date(slot.date).toDateString()}</p>
-                            <p><strong>Time:</strong> {slot.time}</p>
-                            <button
-                              className="btn btn-primary w-100"
-                              disabled={slot.isBooked}
-                              onClick={() => handleBookNow(service.name, service._id, slot)}
-                            >
-                              {slot.isBooked ? 'Booked' : 'Book Now'}
-                            </button>
+                      {service.availableSlots.map((slot) => {
+                        const remaining = timers[slot._id] || 0;
+                        const minutes = Math.floor(remaining / 60);
+                        const seconds = remaining % 60;
+
+                        return (
+                          <div className="col-md-6 mb-3" key={slot._id}>
+                            <div className="card p-3 shadow-sm h-100">
+                              <p><strong>Date:</strong> {new Date(slot.date).toDateString()}</p>
+                              <p><strong>Time:</strong> {slot.time}</p>
+                              
+                              {remaining > 0 && (
+                                <p className="text-success">
+                                  Time left: {minutes}:{seconds < 10 ? `0${seconds}` : seconds}
+                                </p>
+                              )}
+
+                              <div className='d-flex justify-content-around gap-3'>
+                                <button
+                                  className="btn btn-primary w-50"
+                                  disabled={slot.isBooked}
+                                  onClick={() => handleBookNow(service.name, service._id, slot)}
+                                >
+                                  {slot.isBooked ? 'Booked' : 'Book Now'}
+                                </button>
+                                <button
+                                  className="btn btn-danger w-50"
+                                  disabled={!slot.isBooked}
+                                  onClick={() => handleCancelBooking(service._id, slot._id)}
+                                >
+                                  Cancel Booking
+                                </button>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

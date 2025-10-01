@@ -8,7 +8,8 @@ const slotSchema = new mongoose.Schema({
     default: false,
   },
    bookedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
-     bookingStatus: { type: String, enum: ["pending", "approved", "rejected"], default: "pending" }
+     bookingStatus: { type: String, enum: ["pending", "Approved", "Rejected"], default: "pending" },
+     bookedAt: { type: Date, default: Date.now() }
 });
 
 const serviceSchema = new mongoose.Schema({

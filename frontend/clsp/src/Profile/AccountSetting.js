@@ -322,7 +322,8 @@ function AccountSettings() {
   const [selectedCountry, setSelectedCountry] = useState("");
   const [selectedState, setSelectedState] = useState("");
   const [city, setCity] = useState("");
-  const [role, setRole] = useState("");
+  const [loading, setLoading] = useState(false);
+
 
 
   // Handle Input Change
@@ -332,6 +333,7 @@ function AccountSettings() {
     let updateuserData = {
       ...data, Id: user.Id
     }
+  setLoading(true);
     try {
       let res = await updateProfile(updateuserData, token)
       if (res) {
@@ -345,6 +347,7 @@ function AccountSettings() {
     } catch (e) {
       toast.error("Profile updated api error", { autoClose: 2000 })
     }
+    finally { setLoading(false);}
   }
   const deleteUser = async (Id) => {
     try {
@@ -376,7 +379,27 @@ function AccountSettings() {
   // Handle Form Submission
 
   return (
-    <> <div className='container-fluid bg-light py-4 vh-100'>
+    <> 
+    {loading && (
+    <div className="Loading">
+    <div id="wifi-loader">
+    <svg class="circle-outer" viewBox="0 0 86 86">
+        <circle class="back" cx="43" cy="43" r="40"></circle>
+        <circle class="front" cx="43" cy="43" r="40"></circle>
+        <circle class="new" cx="43" cy="43" r="40"></circle>
+    </svg>
+    <svg class="circle-middle" viewBox="0 0 60 60">
+        <circle class="back" cx="30" cy="30" r="27"></circle>
+        <circle class="front" cx="30" cy="30" r="27"></circle>
+    </svg>
+    <svg class="circle-inner" viewBox="0 0 34 34">
+        <circle class="back" cx="17" cy="17" r="14"></circle>
+        <circle class="front" cx="17" cy="17" r="14"></circle>
+    </svg>
+    <div class="text" data-text="Connecting"></div>
+</div></div>
+  )}
+    <div className='container-fluid bg-light py-4 vh-100'>
       <div className='container'>
         {/* Profile Header */}
         <div className='d-flex justify-content-between Acountheader align-items-center bg-white p-3 shadow-sm rounded'>

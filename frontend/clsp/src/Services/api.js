@@ -23,7 +23,11 @@ export const endpoint = {
     UPDATE_SERVICE:API_BASE_URL+"service/:serviceId/slot/:slotId",
     DELETE_SERVICE:API_BASE_URL+"service/:serviceId/slots/:slotId",
     BOOKED_REQUESTS:API_BASE_URL+"service/:serviceId/requests",
-    UPDATE_BOOKING_STATUS:API_BASE_URL+"service/:serviceId/slot/:slotId/status"
+    UPDATE_BOOKING_STATUS:API_BASE_URL+"service/:serviceId/slot/:slotId/status",
+    ///Service Status Approve and reject functionality yh jo hai put ke sath chalegi apni theekhai 
+    STATUS_UPDATE:API_BASE_URL+"service/:serviceId/slot/:slotId/status",
 
+    UPDATE_SERVICE_DATA:API_BASE_URL+"service/:serviceId",
+    ADD_SLOTS:API_BASE_URL+"service/:serviceId/slots"
 }
 export default API_BASE_URL;

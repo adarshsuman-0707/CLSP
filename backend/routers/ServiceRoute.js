@@ -4,7 +4,7 @@ const servicemiddleware=require('../middleware/servicemiddleware.js')
 const authmiddleware=require('../middleware/authmiddleware.js')
 
 // const adminMiddleware=require('../middleware/adminmiddleware.js')
-const {addService,deleteSlotFromService, updateSlotBookingStatus,Allservices,bookServiceSlot,getBookingRequests}=require('../serviceController/Service.js')
+const {addService,deleteSlotFromService,updateService, updateSlotBookingStatus,Allservices,updateSlotStatus,getBookingRequests,addServiceSlot}=require('../serviceController/Service.js')
 
 route.get("/services",authmiddleware, Allservices);
 route.post("/add/:creatorId",servicemiddleware, addService);
@@ -12,8 +12,14 @@ route.delete('/:serviceId/slots/:slotId',servicemiddleware, deleteSlotFromServic
 route.patch('/:serviceId/slot/:slotId',servicemiddleware, updateSlotBookingStatus);
 // route.post('/book/:serviceId/slot/:slotId',authmiddleware, bookServiceSlot);//
 route.get('/:serviceId/requests',servicemiddleware, getBookingRequests);
+route.put("/:serviceId/slot/:slotId/status", servicemiddleware, updateSlotStatus);
+route.post("/:serviceId/slots", servicemiddleware, addServiceSlot);
+
 // http://localhost:5000/api/service/67f138c257c06507c37acfa4/slot/67f138c257c06507c37acfa6]
 // http://localhost:5000/api/service/book/68ab427422cc12409b294957/slot/68ab427422cc12409b294958
 
+
+
+route.put("/:serviceId", updateService);
 
 module.exports=route

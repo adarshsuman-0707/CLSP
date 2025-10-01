@@ -5,6 +5,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Navbar from '../../Pages/NavbarProfile.js'
 import { useNavigate } from 'react-router-dom';
+import { set } from 'react-hook-form';
 const AddServicePage = () => {
   const [token] = useState(localStorage.getItem('token'));
   const [newService, setNewService] = useState({
@@ -52,8 +53,9 @@ const AddServicePage = () => {
     setNewSlot({ date: '', time: '', isBooked: false });
     toast.success('Slot added.');
   };
-
+    const [loading, setLoading] = useState(false);
   const handleAddService = async () => {
+
     if (
       !newService.name ||
       !newService.category ||
@@ -67,6 +69,11 @@ const AddServicePage = () => {
     }
 
     try {
+      setLoading(true);
+      if (!token) {
+        toast.error('Authentication failed. Please login again.');
+        return;
+      }
       const creatorId = localStorage.getItem('serviceID') || '';
       await addService(creatorId, newService, token);
       toast.success('Service added successfully.');
@@ -81,7 +88,7 @@ const AddServicePage = () => {
       navigate('/service/serviceall')
     } catch (error) {
       toast.error('Failed to add service.');
-    }
+    }finally { setLoading(false); }
   };
 
   return (
@@ -92,6 +99,25 @@ const AddServicePage = () => {
     
     
     <div className="container my-5">
+      {loading && (
+    <div className="Loading">
+    <div id="wifi-loader">
+    <svg class="circle-outer" viewBox="0 0 86 86">
+        <circle class="back" cx="43" cy="43" r="40"></circle>
+        <circle class="front" cx="43" cy="43" r="40"></circle>
+        <circle class="new" cx="43" cy="43" r="40"></circle>
+    </svg>
+    <svg class="circle-middle" viewBox="0 0 60 60">
+        <circle class="back" cx="30" cy="30" r="27"></circle>
+        <circle class="front" cx="30" cy="30" r="27"></circle>
+    </svg>
+    <svg class="circle-inner" viewBox="0 0 34 34">
+        <circle class="back" cx="17" cy="17" r="14"></circle>
+        <circle class="front" cx="17" cy="17" r="14"></circle>
+    </svg>
+    <div class="text" data-text="Connecting"></div>
+</div></div>
+  )}
       <h2>Add New Service</h2>
       <div className="mb-3">
         <label className="form-label">Service Name</label>

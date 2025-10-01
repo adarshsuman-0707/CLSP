@@ -18,6 +18,7 @@ import ServicePage from './Components/serviceMan/servicePage.jsx';
 import AddServicePage from './Components/serviceMan/AddservicePage.jsx';
 import ServiceBookingRequests from './Components/serviceMan/ServiceBookingRequests.jsx';
 import GlobalShortCut from './GlobalShortCut.jsx';
+import UpdateServicePopup from './Components/serviceMan/UpdateServicePopup.jsx';
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
 root.render(
@@ -44,6 +45,7 @@ root.render(
 <Route element={<ProtectedRoute allowedRoles={["service"]} />}>
   <Route path="/service/serviceall" element={<ServicePage />} />
   <Route path="/service/serviceadd" element={<AddServicePage />} />
+  <Route path="/service/UpdateService" element={<UpdateServicePopup />} />
 </Route>
 <Route path="/unauthorized" element={<Unauthorized />} />
 <Route path="*" element={<PageNotFound />} />
