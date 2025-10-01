@@ -25,10 +25,9 @@ This project is about building something **awesome** with:
 ---
 
 ## 🔗 Connect with Me
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-blue?style=for-the-badge&logo=linkedin)](https://linkedin.com/in/yourusername)
-[![Twitter](https://img.shields.io/badge/Twitter-black?style=for-the-badge&logo=twitter)](https://twitter.com/yourusername)
-[![Portfolio](https://img.shields.io/badge/Portfolio-FF7139?style=for-the-badge&logo=firefox)](https://yourwebsite.com)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-blue?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/adarsh-suman-458201254/)
+[![Portfolio](https://img.shields.io/badge/Portfolio-FF7139?style=for-the-badge&logo=firefox)](https://portfolio-adarshsuman.netlify.app/)
 
 ---
 
-✨ **Made with ❤️ by [Your Name](https://github.com/adarshsuman-0707)**
+✨ **Made with ❤️ by [ADARSH SUMAN](https://github.com/adarshsuman-0707)**
