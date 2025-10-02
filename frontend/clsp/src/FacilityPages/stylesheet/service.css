@@ -1,0 +1,105 @@
+.like  {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: none; /* corrected border syntax */
+  position: relative;
+  background-color: white; /* icon ke liye contrast */
+}
+
+.eye {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  border: none; /* corrected border syntax */
+  position: relative;
+  background-color: white; /* icon ke liye contrast */
+}
+.eye::after {
+  content: "view";
+  width: fit-content;
+  height: fit-content;
+  position: absolute;
+  font-size: 15px;
+  color: rgb(22, 53, 191);
+  font-family: "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
+    "Lucida Sans Unicode", Geneva, Verdana, sans-serif;
+  opacity: 0;
+  visibility: hidden;
+  transition: 0.2s linear;
+  top: 115%;
+}
+.like::after {
+  content: "Save";
+  width: fit-content;
+  height: fit-content;
+  position: absolute;
+  font-size: 15px;
+  color: rgb(191, 22, 22);
+  font-family: "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
+    "Lucida Sans Unicode", Geneva, Verdana, sans-serif;
+  opacity: 0;
+  visibility: hidden;
+  transition: 0.2s linear;
+  top: 115%;
+}
+
+.icon {
+  width: 30px;
+  height: 30px;
+  transition: 0.2s linear;
+  display: block; /* ✅ ensure always visible */
+}
+
+.icon path {
+  fill: rgb(191, 22, 22); /* initial color */
+  transition: 0.2s linear;
+}
+
+/* Hover effect for pseudo text */
+.like:hover::after {
+  visibility: visible;
+  opacity: 1;
+  top: 105%;
+}
+.eye:hover::after {
+  visibility: visible;
+  opacity: 1;
+  top: 105%;
+}
+
+/* Optional: hover effect for icon color */
+.like:hover .icon path {
+  fill: rgb(255, 50, 50);
+}.eye:hover .icon path {
+  fill: rgb(255, 50, 50);
+}
+.button-group {
+  display: flex;
+  gap: 10px;          /* buttons ke beech distance */
+  justify-content: flex-start; /* left align */
+  align-items: center; /* vertical center */
+  margin-top: 5px;    /* thoda space upar se */
+}
+
+.button-group button {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.button-group button:hover {
+  transform: scale(1.1);  /* hover effect */
+  transition: 0.2s ease;
+}

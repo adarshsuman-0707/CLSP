@@ -3,14 +3,17 @@ import Navbar from '../Pages/NavbarProfile';
 import { serviceall, servicerBookedByUser } from '../Services/operation/serviceauthcall';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import './stylesheet/service.css'
+import { savedService } from '../Services/operation/SaveServiceUserCall';
 
 const ServiceList = () => {
-  const token = localStorage.getItem('token'); 
+  const token = localStorage.getItem('token');
   const [services, setServices] = useState([]);
   const [filteredServices, setFilteredServices] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [timers, setTimers] = useState({}); // { slotId: remainingSeconds }
+  const [loading, setLoading] = useState(false);
+  const [timers, setTimers] = useState({});
+  const [selectedService, setSelectedService] = useState(null); // 👈 Popup ke liye
 
   // Service fetch function
   const fetchServices = async () => {
@@ -18,14 +21,14 @@ const ServiceList = () => {
     setLoading(true);
     try {
       const data = await serviceall(token);
-      const serviceData = data?.services || data; 
+      const serviceData = data?.services || data;
       setServices(serviceData);
       setFilteredServices(serviceData);
     } catch (error) {
       console.error('Error fetching services:', error);
       toast.error('Failed to fetch services. Please try again later.');
     } finally {
-      setLoading(false);
+      setTimeout(() => setLoading(false), 2000);
     }
   };
 
@@ -60,6 +63,7 @@ const ServiceList = () => {
   // Booking function
   const handleBookNow = async (serviceName, serviceId, slot) => {
     try {
+      setLoading(true)
       const booking = {
         serviceName,
         date: new Date(slot.date).toDateString(),
@@ -71,34 +75,61 @@ const ServiceList = () => {
 
       if (data.message.includes("booked")) {
         toast.success(`✅ You booked ${booking.serviceName} on ${booking.date} at ${booking.time}.`);
-        
-        // Start 2-minute timer for this slot
         setTimers(prev => ({ ...prev, [slot._id]: 150 })); // 150 seconds
-
-        fetchServices(); // refresh service list
+        fetchServices();
       } else if (data.message.includes("cancelled")) {
         toast.success(`✅ You Cancelled ${booking.serviceName} on ${booking.date} at ${booking.time}.`);
-        setTimers(prev => ({ ...prev, [slot._id]: 0 })); // reset timer
+        setTimers(prev => ({ ...prev, [slot._id]: 0 }));
         fetchServices();
       } else {
         toast.error(data?.message || "❌ Failed to book the service.");
       }
     } catch (error) {
       console.error("Booking Error:", error);
-      toast.error("❌ Something went wrong.");
+      toast.error("❌ Something went wrong." + error.message);
+    }
+    finally {
+      setTimeout(() => setLoading(false), 2000);
     }
   };
 
   const handleCancelBooking = async (serviceId, slotId) => {
-    // Simply call the same booking API to toggle cancel
-    const slot = filteredServices.flatMap(s => s.availableSlots).find(sl => sl._id === slotId);
-    if (!slot) return;
-    handleBookNow(slot.serviceName, serviceId, slot);
+    try {
+      setLoading(true)
+      const slot = filteredServices.flatMap(s => s.availableSlots).find(sl => sl._id === slotId);
+      if (!slot) return;
+      handleBookNow(slot.serviceName, serviceId, slot);
+    }
+    catch (e) {
+      toast.error("Error in Cancel Booking Try Again")
+    }
+    finally {
+      setTimeout(() => setLoading(false), 2000);
+    }
   };
+
+  const handleSaveService = async (token, serviceId) => {
+    try {
+      setLoading(true)
+      const res= await savedService(token, serviceId);
+      console.log(res)
+      if(res?.message==="Service already saved"){
+        return toast.info("Service Already Saved")
+      }
+      toast.success("Service Saved Successfully")
+    } catch (e) {
+      console.log(e)
+      toast.error(e)
+    }
+    finally {
+      setTimeout(() => setLoading(false), 2000);
+    }
+  }
 
   return (
     <>
       <Navbar />
+
       <div className="container mt-5">
         <h2 className="mb-4">Available Services</h2>
 
@@ -114,9 +145,7 @@ const ServiceList = () => {
         </div>
 
         {/* Service list */}
-        {loading ? (
-          <div className="text-center"><p>Loading services...</p></div>
-        ) : filteredServices.length === 0 ? (
+        {filteredServices.length === 0 ? (
           <p>No services match your search.</p>
         ) : (
           <div className="accordion" id="servicesAccordion">
@@ -141,7 +170,29 @@ const ServiceList = () => {
                   data-bs-parent="#servicesAccordion"
                 >
                   <div className="accordion-body">
-                    <p><strong>Description:</strong> {service.description}</p>
+                    <div className='d-flex justify-content-between'>
+                      <p><strong>Description:</strong> {service.description}</p>
+                      <p style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
+                        {/* 👇 Popup button */}
+
+
+                        <button className="eye" onClick={() => setSelectedService(service)}style={{ marginLeft: '15px' }}><svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.6"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path>
+                          <circle cx="12" cy="12" r="3"></circle>
+                        </svg></button>
+                        <button className="like" onClick={() => handleSaveService(token, service._id)} style={{ marginLeft: '15px' }}>❤️</button>
+                      </p>
+                    </div>
                     <p><strong>Duration:</strong> {service.duration}</p>
                     <h6>Available Slots:</h6>
                     <div className="row">
@@ -155,7 +206,7 @@ const ServiceList = () => {
                             <div className="card p-3 shadow-sm h-100">
                               <p><strong>Date:</strong> {new Date(slot.date).toDateString()}</p>
                               <p><strong>Time:</strong> {slot.time}</p>
-                              
+
                               {remaining > 0 && (
                                 <p className="text-success">
                                   Time left: {minutes}:{seconds < 10 ? `0${seconds}` : seconds}
@@ -190,6 +241,32 @@ const ServiceList = () => {
           </div>
         )}
       </div>
+
+      {/* ✅ Popup Modal */}
+      {selectedService && (
+        <div className="modal fade show d-block" tabIndex="-1" style={{ background: "rgba(0,0,0,0.6)" }}>
+          <div className="modal-dialog">
+            <div className="modal-content p-3">
+              <div className="modal-header">
+                <h5 className="modal-title">Service Created By</h5>
+                <button type="button" className="btn-close" onClick={() => setSelectedService(null)}></button>
+              </div>
+              <div className="modal-body">
+                <h6><b>First Name:</b> {selectedService.createdBy?.firstname}</h6>
+                <h6><b>Last Name:</b> {selectedService.createdBy?.lastname}</h6>
+                <h6><b>Email:</b> {selectedService.createdBy?.email}</h6>
+                <h6><b>Contact:</b> {selectedService.createdBy?.contact}</h6>
+                <h6><b>Address:</b> {selectedService.createdBy?.address}</h6>
+                <h6><b>Pincode:</b> {selectedService.createdBy?.pincode}</h6>
+              </div>
+              <div className="modal-footer">
+                <button className="btn btn-secondary" onClick={() => setSelectedService(null)}>Close</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ToastContainer />
     </>
   );

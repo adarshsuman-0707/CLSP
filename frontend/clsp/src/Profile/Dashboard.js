@@ -113,6 +113,7 @@ import {
   CDBSidebarMenuItem,
 } from 'cdbreact';
 import { FaUser, FaWallet, FaHistory, FaBell, FaEdit, FaPowerOff } from 'react-icons/fa';
+import SavedService from './SavedService';
 
 
 function Dashboard() {
@@ -143,7 +144,7 @@ function Dashboard() {
       case 'serviceRequests':
         return <BookService />;
       case 'savedService':
-        return <h2>Saved Service</h2>;
+        return <SavedService/>
       case 'reviews':
         return <h2>Reviews & Rating</h2>;
       case 'notifications':

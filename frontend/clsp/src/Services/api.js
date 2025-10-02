@@ -14,6 +14,9 @@ export const endpoint = {
     UPDATE_PROFILE:API_BASE_URL+ "user/updateUser",
     DELETE_PROFILE:API_BASE_URL + "user/deleteProfile/:id",
     BOOKED_SERVICES:API_BASE_URL + "user/book/:serviceId/slot/:slotId",
+    SAVE_SERVICE:API_BASE_URL + "user/saveService/:serviceId",
+    GET_SAVE_SERVICE:API_BASE_URL+"user/getUserSavedService",
+    REMOVE_SAVE_SERVICE:API_BASE_URL+"user/removeSavedService/:serviceId",
 
     //services userside show 
     FETCH_SERVICE : API_BASE_URL+"service/services",

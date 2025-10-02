@@ -1,4 +1,6 @@
+const Service = require('../models/Service');
 const User = require('../models/User')
+const SavedService=require('../models/SaveService')
 
 const userProfile = async (req, res) => {
     try {
@@ -76,7 +78,108 @@ try {
     res.status(500).json({ message: "Internal Server Error" });
 }
 }
+const UserSavedService = async (req, res) => {
+  try {
+    const serviceId = req.params.serviceId; // service id from frontend (URL)
+    const userId = req.user._id;            // user id from token (auth middleware)
 
-module.exports = { userProfile,userDataUpdate,userDeleteProfile };
+    if (!serviceId || !userId) {
+      return res.status(400).json({ message: "Service ID and User ID are required" });
+    }
+
+    // Check if service exists
+    const service = await Service.findById(serviceId);
+    if (!service) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    // Check if already saved
+    const alreadySaved = await SavedService.findOne({savedService: serviceId });
+    console.log(alreadySaved, "already saved wala data");
+    if (alreadySaved) {
+      return res.status(200).json({ message: "Service already saved", savedService: alreadySaved });
+    }
+
+    // Save new service for user
+    const newSaved = new SavedService({
+      savedBy: userId,
+      savedService: serviceId,
+    });
+
+    await newSaved.save();
+
+    return res.status(201).json({
+      message: "Service saved successfully",
+      savedService: newSaved,
+    });
+
+  } catch (error) {
+    console.error("Save Service Error:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+const getUserSavedServices = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const saved = await SavedService.find({ savedBy: userId })
+      .populate({
+        path: "savedService",       // Service model ki details
+        select: "name description price duration category availableSlots"
+      });
+
+    // Agar koi service hi saved nahi hai
+    if (!saved || saved.length === 0) {
+      return res.status(200).json({
+        message: "No saved services found",
+        savedServices: []
+      });
+    }
+
+    return res.status(200).json({
+      message: "User saved services fetched successfully",
+      savedServices: saved.map(item => ({
+        id: item._id,
+        savedAt: item.savedAt,
+        service: {
+          id: item.savedService?._id,
+          name: item.savedService?.name,
+          description: item.savedService?.description,
+          price: item.savedService?.price,
+          duration: item.savedService?.duration,
+          category: item.savedService?.category,
+          availableSlots: item.savedService?.availableSlots
+        }
+      }))
+    });
+
+  } catch (error) {
+    console.error("Get Saved Services Error:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+//{"message":"User saved services fetched successfully","savedServices":[{"id":"68dd6793d70f69148edebb14","savedAt":"2025-10-01T17:40:35.414Z","service":{"id":"68ab405722cc12409b294942","name":"Pipe","description":"Money","price":12343,"duration":"1","category":"Electrician","availableSlots":[{"date":"2025-09-30T00:00:00.000Z","time":"12:40","isBooked":true,"bookedBy":"68ab3e0b22cc12409b294919","bookingStatus":"Approved","_id":"68d2f09cb5a37a37b800fe8c","bookedAt":"2025-09-30T17:52:53.839Z"}]}}]}
+const removeSavedService = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const serviceId = req.params.serviceId;
+
+    const deleted = await SavedService.findOneAndDelete({
+      savedBy: userId,
+      savedService: serviceId,
+    });
+
+    if (!deleted) {
+      return res.status(404).json({ message: "Service not found in saved list" });
+    }
+
+    return res.status(200).json({ message: "Service unsaved successfully" });
+  } catch (error) {
+    console.error("Remove Saved Service Error:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+module.exports = { userProfile,userDataUpdate,userDeleteProfile,UserSavedService,getUserSavedServices,removeSavedService };
 
 // module.exports={userProfile}

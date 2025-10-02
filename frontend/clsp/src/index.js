@@ -18,6 +18,7 @@ import ServicePage from './Components/serviceMan/servicePage.jsx';
 import AddServicePage from './Components/serviceMan/AddservicePage.jsx';
 import ServiceBookingRequests from './Components/serviceMan/ServiceBookingRequests.jsx';
 import GlobalShortCut from './GlobalShortCut.jsx';
+import SavedService from './Profile/SavedService.js';
 import UpdateServicePopup from './Components/serviceMan/UpdateServicePopup.jsx';
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
@@ -35,6 +36,7 @@ root.render(
 <Route element={<ProtectedRoute allowedRoles={["user"]} />}>
   <Route path="/user/profile" element={<Dashboard />} />
   <Route path="/user/service" element={<Service />} />
+  <Route path="/user/savedservices" element={<SavedService />} />
 </Route>
 <Route element={<ProtectedRoute allowedRoles={["service"]} />}>
   <Route path="/Facilator/profile" element={<Dashboard />} />

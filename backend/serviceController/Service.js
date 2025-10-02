@@ -90,7 +90,7 @@ const updateSlotBookingStatus = async (req, res) => {
 };
 const Allservices = async (req, res) => {
   try {
-    const data = await Service.find();
+    const data = await Service.find().populate('createdBy', 'firstname lastname email phone address pincode contact');
     console.log(data, "find the services")
 
     if (!data) {
