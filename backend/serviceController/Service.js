@@ -2,7 +2,9 @@
 
 const Service = require("../models/Service.js");
 const sendBookingStatusEmail=require('../utils/sendBookingStatusEmail.js')
+const HistoryServiceDoneStatus = require("../models/History"); // adj
 const User = require("../models/User.js");
+const review = require("../models/reviewSchema.js");
 const cron = require("node-cron");
 const addService = async (req, res) => {
   try {
@@ -386,5 +388,81 @@ const addServiceSlot = async (req, res) => {
   }
 };
 
+const DeliveryServiceStatus=async(req,res)=>{
+  try {
+    const { serviceId, slotId } = req.params;
+    const { status } = req.body;
+    const userId = req.user._id; // 👈 login se aayeg
+    console.log("Delivery status update request:", { serviceId, slotId, userId, status });
+    console.log(status,"status")
 
-module.exports = { addService, deleteSlotFromService, updateSlotBookingStatus, Allservices, bookServiceSlot, getBookingRequests,updateSlotStatus,updateService,addServiceSlot };
+    // 1. validate status
+    if (!['completed', 'failed'].includes(status)) {
+      return res.status(400).json({ message: "Status must be completed or failed" });
+    } 
+    // 2. service fetch karo
+    const service = await Service.findById(serviceId).populate("availableSlots.bookedBy", "name email");
+    if (!service) 
+    {
+      return res.status(404).json({ message: "Service not found" });
+    }
+    // 3. slot find karo
+    const slot = service.availableSlots.id(slotId);
+    if (!slot) {
+      return res.status(404).json({ message: "Slot not found" });
+    }
+    console.log(slot,"slot")
+    // 4. check bookedBy match
+    if (!slot.bookedBy || slot.bookedBy._id.toString() === userId.toString()) {
+      return res.status(403).json({ message: "You can update only your booked slot" });
+    }
+    if(status==="completed"){
+    await sendBookingStatusEmail(
+      slot.bookedBy.email,
+      `Service Completed`,
+      service.name, 
+      new Date().toLocaleString()   // ✅ correct
+    );
+
+  }
+  else{
+    await sendBookingStatusEmail(
+      slot.bookedBy.email,
+      `Service Failed`,
+      service.name, 
+      new Date().toLocaleString()   // ✅ correct
+    );
+  }
+    // 5. status update
+    slot.ServiceDeliveryStatus = status;
+    await service.save();
+        if(status === "completed") {
+      const historyData = {
+        ServiceID: service._id,
+        user: slot.bookedBy._id,
+        serviceName: service.name,
+        serviceDescription: service.description || "",
+        serviceCategory: service.category || "",
+        servicePrice: service.price || 0,
+        serviceDuration: service.duration || "",
+        serviceman: userId,
+        servicemanName: req.user.firstname + " " + req.user.lastname,
+        deliveryStatus: "completed",
+        completedAt: new Date(),
+       
+      };
+      console.log(historyData,"history data")
+      await HistoryServiceDoneStatus.create(historyData);
+    }
+    res.status(200).json({
+      message: "Service Delivery Status updated successfully",
+      status: slot.ServiceDeliveryStatus
+    });
+  }
+  catch (err) {
+
+    console.error("Error updating slot status:", err);
+    res.status(500).json({ message: "Something went wrong" });
+  } 
+};
+module.exports = { addService, deleteSlotFromService, updateSlotBookingStatus, Allservices, bookServiceSlot, getBookingRequests,updateSlotStatus,updateService,addServiceSlot,DeliveryServiceStatus };

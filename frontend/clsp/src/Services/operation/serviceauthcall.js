@@ -1,6 +1,6 @@
 import apiConnector from "../apiconfig.js"
 import { endpoint } from "../api.js";
-const { UPDATE_SERVICE, DELETE_SERVICE,UPDATE_SERVICE_DATA,ADD_SLOTS, ADD_SERVICE, FETCH_SERVICE, BOOKED_REQUESTS, BOOKED_SERVICES, STATUS_UPDATE } = endpoint;
+const { UPDATE_SERVICE, DELETE_SERVICE,UPDATE_SERVICE_DATA,ADD_SLOTS, ADD_SERVICE, FETCH_SERVICE, BOOKED_REQUESTS, BOOKED_SERVICES, STATUS_UPDATE,DELIVERY_STATUS } = endpoint;
 export const serviceall = async (token) => {
     try {
         const res = await apiConnector.get(FETCH_SERVICE, {
@@ -156,4 +156,20 @@ export const AddSlots_Service = async (serviceId, data, token) => {
         throw error.response?.data || "Failed to AddSlotService Service!";
     }
 };
-
+ export const DeliveryServiceStatus=async(serviceId,slotId,status,token)=>{
+    try {
+        const url = DELIVERY_STATUS
+            .replace(":serviceId", serviceId)
+            .replace(":slotId", slotId);
+        console.log(token)
+        const res = await apiConnector.put(url, { status }, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        return res.data;
+    }   catch (error) {
+        console.log(error);
+        throw error.response?.data || "Failed to update delivery status!";
+    }  
+}

@@ -75,6 +75,7 @@ const AddServicePage = () => {
         return;
       }
       const creatorId = localStorage.getItem('serviceID') || '';
+      newService.duration+=newService.duration+ " Hour "
       await addService(creatorId, newService, token);
       toast.success('Service added successfully.');
       setNewService({
@@ -163,7 +164,7 @@ const AddServicePage = () => {
       <div className="mb-3">
         <label className="form-label">Duration</label>
         <input
-          type="text"
+          type="number"
           name="duration"
           value={newService.duration}
           onChange={handleNewServiceChange}

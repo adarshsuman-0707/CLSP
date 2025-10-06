@@ -7,9 +7,10 @@ const slotSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-   bookedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
-     bookingStatus: { type: String, enum: ["pending", "Approved", "Rejected"], default: "pending" },
-     bookedAt: { type: Date, default: Date.now() }
+  bookedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+  bookingStatus: { type: String, enum: ["pending", "Approved", "Rejected"], default: "pending" },
+  bookedAt: { type: Date, default: Date.now() },
+  ServiceDeliveryStatus: { type: String, enum: ["pending", "completed", "failed"], default: "pending" },
 });
 
 const serviceSchema = new mongoose.Schema({

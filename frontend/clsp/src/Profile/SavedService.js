@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import "bootstrap/dist/css/bootstrap.min.css";
 import { getSavedServices,unsaveService } from "../Services/operation/SaveServiceUserCall";
+import { NotificationAdd } from "../Services/operation/Notification";
 import '../Pages/Stylesheet/Login.css'
 const SavedService = () => {
     const [savedServices, setSavedServices] = useState([]);
@@ -11,6 +12,7 @@ const SavedService = () => {
             setLoading(true);
             const token = localStorage.getItem("token");
             const response = await getSavedServices(token);
+
             console.log(response, " SavedService frontend");
             setSavedServices(response.savedServices || []);
        
@@ -24,11 +26,13 @@ const SavedService = () => {
         }
     };
 
-    const handleUnsave = async (serviceId) => {
+    const handleUnsave = async (serviceId,servicename) => {
         try {
             setLoading(true);
             const token = localStorage.getItem("token");
               await unsaveService(token, serviceId); // ✅ API call for unsave
+         await NotificationAdd(token, {type:"service",title:"UnSaved service",message:`${servicename}Service Unsaved Successfully`})
+              
             // UI se remove kar do
             setSavedServices((prev) =>
                 prev.filter((item) => item.service.id !== serviceId)
@@ -69,13 +73,14 @@ const SavedService = () => {
 </div></div>
   )}
  
-        <div className="container my-5 saved">
-            
+        <div className="container my-4 saved">
+                <br></br>
+
             <h2 className="text-center mt-5 mb-4 fw-bold">⭐ Your Saved Services</h2>
             <div className="row g-4">
                 {savedServices.length > 0 ? (
                     savedServices.map((item) => (
-                        <div className="col-md-6 col-lg-4" key={item.id}>
+                        <div className="col-md-6 col-lg-4 fade-in" key={item.id}>
                             <div className="card shadow-lg border-0 rounded-4 h-100">
                                 <div className="card-body p-4">
                                     <h5 className="card-title fw-bold text-primary">
@@ -141,7 +146,7 @@ const SavedService = () => {
                                 <div className="card-footer bg-white border-0 text-center">
                                     <button
                                         className="btn btn-outline-danger w-100 rounded-pill"
-                                        onClick={() => handleUnsave(item.service.id)}
+                                        onClick={() => handleUnsave(item.service.id,item.service.name)}
                                     >
                                         ❌ Unsave
                                     </button>

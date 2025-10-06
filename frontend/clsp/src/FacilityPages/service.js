@@ -5,7 +5,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import './stylesheet/service.css'
 import { savedService } from '../Services/operation/SaveServiceUserCall';
-
+import { NotificationAdd } from '../Services/operation/Notification'; 
 const ServiceList = () => {
   const token = localStorage.getItem('token');
   const [services, setServices] = useState([]);
@@ -76,9 +76,12 @@ const ServiceList = () => {
       if (data.message.includes("booked")) {
         toast.success(`✅ You booked ${booking.serviceName} on ${booking.date} at ${booking.time}.`);
         setTimers(prev => ({ ...prev, [slot._id]: 150 })); // 150 seconds
+        await NotificationAdd(token, {type:"service",title:"Booking Service",message:"Service Booked Successfully"})
         fetchServices();
       } else if (data.message.includes("cancelled")) {
         toast.success(`✅ You Cancelled ${booking.serviceName} on ${booking.date} at ${booking.time}.`);
+    await NotificationAdd(token, {type:"service",title:"Booking Service",message:"Service cancelled Successfully"})
+
         setTimers(prev => ({ ...prev, [slot._id]: 0 }));
         fetchServices();
       } else {
@@ -99,6 +102,7 @@ const ServiceList = () => {
       const slot = filteredServices.flatMap(s => s.availableSlots).find(sl => sl._id === slotId);
       if (!slot) return;
       handleBookNow(slot.serviceName, serviceId, slot);
+      
     }
     catch (e) {
       toast.error("Error in Cancel Booking Try Again")
@@ -108,10 +112,12 @@ const ServiceList = () => {
     }
   };
 
-  const handleSaveService = async (token, serviceId) => {
+  const handleSaveService = async (token, serviceId,servicename) => {
     try {
       setLoading(true)
       const res= await savedService(token, serviceId);
+     await NotificationAdd(token, {type:"service",title:"Saved service",message:`${servicename}Service saved Successfully`})
+      
       console.log(res)
       if(res?.message==="Service already saved"){
         return toast.info("Service Already Saved")
@@ -190,7 +196,7 @@ const ServiceList = () => {
                           <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path>
                           <circle cx="12" cy="12" r="3"></circle>
                         </svg></button>
-                        <button className="like" onClick={() => handleSaveService(token, service._id)} style={{ marginLeft: '15px' }}>❤️</button>
+                        <button className="like" onClick={() => handleSaveService(token, service._id,service.name)} style={{ marginLeft: '15px' }}>❤️</button>
                       </p>
                     </div>
                     <p><strong>Duration:</strong> {service.duration}</p>

@@ -104,6 +104,8 @@ import ServiceList from '../Components/serviceMan/ServiceBookingRequests';
 import BookService from '../FacilityPages/service';
 import Footer from '../Pages/Footer';
 import Navbar from '../Pages/NavbarProfile';
+import ReviewService from './ReviewService';
+import Notification from './Notification';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import {
   CDBSidebar,
@@ -132,7 +134,7 @@ function Dashboard() {
       case 'reviews':
         return <h2>Reviews & Rating</h2>;
       case 'notifications':
-        return <h2>Notifications</h2>;
+        return <Notification/>
       default:
         return <AccountSettings />;
     }
@@ -146,9 +148,9 @@ function Dashboard() {
       case 'savedService':
         return <SavedService/>
       case 'reviews':
-        return <h2>Reviews & Rating</h2>;
+        return <ReviewService/>;
       case 'notifications':
-        return <h2>Notifications</h2>;
+        return <Notification/>;
       default:
         return <AccountSettings />;
     }

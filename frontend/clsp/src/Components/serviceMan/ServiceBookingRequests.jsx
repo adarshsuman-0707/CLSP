@@ -725,7 +725,8 @@ import {
     BookedRequestByUser,
     servicerUpdateBookingStatus,
     UpdateServiceValue,
-    AddSlots_Service
+    AddSlots_Service,
+    DeliveryServiceStatus
 } from '../../Services/operation/serviceauthcall';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -946,7 +947,23 @@ const ServicePage = () => {
        }
 
       }
-    
+      const handleDeliveryServiceStatus=async(serviceId,requestId,status,token)=>{
+        setLoading(true);
+        try{
+            await DeliveryServiceStatus(serviceId,requestId,status,token);
+            toast.success("Service marked as completed.");
+            fetchData();
+        }
+        catch(error){
+            toast.error("Failed to mark service as completed.");
+            console.log("Error in marking service as completed:",error);
+        }
+        finally{
+            setTimeout(()=>{
+                setLoading(false);
+        },3000)
+    }
+}
 
     return (
         <>
@@ -1086,6 +1103,9 @@ const ServicePage = () => {
                                                             <p><strong>Email:</strong> {req.bookedBy?.email || "N/A"}</p>
                                                             <p><strong>Address:</strong> {req.bookedBy?.address || "N/A"}</p>
                                                             <p><strong>Pincode:</strong> {req.bookedBy?.pincode || "N/A"}</p>
+                                                           <p style={{width:"500px"}}> <button className='btn btn-info' onClick={() => { handleDeliveryServiceStatus(service._id,req._id,"completed",token) }}>Done</button>
+                                                            <button className='btn btn-danger' onClick={() => { handleDeliveryServiceStatus(service._id,req._id,"failed",token) }}>Cancel</button>
+                                                            </p>
                                                             </>):(<p>No User Booked </p>)}
 
                                                         </div>

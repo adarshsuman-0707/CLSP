@@ -17,6 +17,11 @@ export const endpoint = {
     SAVE_SERVICE:API_BASE_URL + "user/saveService/:serviceId",
     GET_SAVE_SERVICE:API_BASE_URL+"user/getUserSavedService",
     REMOVE_SAVE_SERVICE:API_BASE_URL+"user/removeSavedService/:serviceId",
+    
+    // Review
+        ADD_REVIEW:API_BASE_URL+"user/addReview",
+        COMPLETED_DELIVERIES:API_BASE_URL+"user/completedDeliveries",
+        REVIEW_DETAILS:API_BASE_URL+"user/getReviewDetails",
 
     //services userside show 
     FETCH_SERVICE : API_BASE_URL+"service/services",
@@ -31,6 +36,15 @@ export const endpoint = {
     STATUS_UPDATE:API_BASE_URL+"service/:serviceId/slot/:slotId/status",
 
     UPDATE_SERVICE_DATA:API_BASE_URL+"service/:serviceId",
-    ADD_SLOTS:API_BASE_URL+"service/:serviceId/slots"
+    ADD_SLOTS:API_BASE_URL+"service/:serviceId/slots",
+    DELIVERY_STATUS:API_BASE_URL+"service/:serviceId/slot/:slotId/delivery",    
+
+
+
+    // Notification
+    ADD_NOTIFICATION:API_BASE_URL+"Notification/add",
+    GET_NOTIFICATION:API_BASE_URL+"Notification/list",
+    MARK_AS_READ:API_BASE_URL+"Notification/:id/read",
+
 }
 export default API_BASE_URL;

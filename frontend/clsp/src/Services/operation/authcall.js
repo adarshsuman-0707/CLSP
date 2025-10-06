@@ -19,7 +19,7 @@ export const LoginUser = async (data) => {
 export const SignupUser = async (data) => {
   try {
     const response = await apiConnector.post(SIGN_UP, data);
-    console.log(response.data, " Signmup");
+    console.log(response.data, " Signup");
     return response.data;
   } catch (error) {
     throw error.response?.data || "Failed to Signup User!";

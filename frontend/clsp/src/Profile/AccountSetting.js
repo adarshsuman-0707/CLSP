@@ -291,6 +291,7 @@ import '../Pages/Stylesheet/Acount.css'
 import countriesData from "../Pages/utils/countryStateCity.json"
 import { useForm } from "react-hook-form";
 import { toast, ToastContainer } from "react-toastify";
+import { NotificationAdd } from '../Services/operation/Notification';
 import "react-toastify/dist/ReactToastify.css";
 import {useNavigate} from 'react-router-dom'
 function AccountSettings() {
@@ -338,6 +339,8 @@ function AccountSettings() {
       let res = await updateProfile(updateuserData, token)
       if (res) {
         toast.success("Profile Successfully update", { autoClose: 2000 })
+            await NotificationAdd(token, {type:"account",title:"Account",message:"Account Updated Successfully"})
+        
         setShowModal(false);
         setUpdateTrigger(prev => !prev);
       }

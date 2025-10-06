@@ -1,7 +1,8 @@
 const Service = require('../models/Service');
 const User = require('../models/User')
 const SavedService=require('../models/SaveService')
-
+const HistoryServiceDoneStatus = require("../models/History"); // adj
+const Review = require('../models/reviewSchema');``
 const userProfile = async (req, res) => {
     try {
         const tokenEmail = req.user.email;
@@ -118,6 +119,7 @@ const UserSavedService = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
 const getUserSavedServices = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -180,6 +182,73 @@ const removeSavedService = async (req, res) => {
   }
 };
 
-module.exports = { userProfile,userDataUpdate,userDeleteProfile,UserSavedService,getUserSavedServices,removeSavedService };
+
+const addReview = async (req, res) => {
+  try {
+    const { serviceId, rating, title, comment, reviewCardId } = req.body;
+    const userId = req.user._id; // customer (from token)
+    console.log(req.body, "review wala data");
+
+    // 1. Service fetch karo
+    const service = await Service.findById(serviceId);
+    if (!service) return res.status(404).json({ message: "Service not found" });
+
+    // 2. Check booking completed
+    const bookedSlot = service.availableSlots.find(
+      s => s.bookedBy?.toString() === userId.toString() && s.ServiceDeliveryStatus === "completed"
+    );
+    if (!bookedSlot) {
+      return res.status(400).json({ message: "You can only review after service completion" });
+    }
+
+    // 3. Upsert review (update if reviewCardId exists, else create new)
+    const review = await Review.findOneAndUpdate(
+      { reviewCardId }, // filter by card
+      {
+        service: serviceId,
+        reviewer: userId,
+        serviceman: service.createdBy,
+        reviewCardId,
+        rating,
+        title,
+        comment,
+        isVerifiedCustomer: true,
+      },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
+    );
+
+    console.log(review, "review added/updated");
+    res.status(201).json({ message: "Review submitted successfully", review });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+const getCompletedDeliveries = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const completedServices = await HistoryServiceDoneStatus.find({ user: userId });
+    res.status(200).json({ completedServices });
+  } catch (error) {
+
+    console.error("Get Completed Deliveries Error:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+const getReviewDetails = async (req, res)=>{
+  try{
+    const userId=req.user._id
+    console.log("User ID for reviews:", userId);
+   const reviews=await Review.find({reviewer:userId});
+    console.log("Fetched reviews:", reviews);
+    res.status(200).json({reviews});
+  }
+  catch(error){
+    console.log("Error in fetching review details:", error);
+  }
+}
+
+module.exports = { userProfile,userDataUpdate,userDeleteProfile,UserSavedService,getUserSavedServices,removeSavedService,addReview,getCompletedDeliveries,getReviewDetails };
 
 // module.exports={userProfile}
