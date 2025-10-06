@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import {recieveEmail} from '../Services/operation/authcall.js'
 
 const ContactUs = () => {
   const [formData, setFormData] = useState({
@@ -23,7 +24,7 @@ const ContactUs = () => {
 
     // Add actual submission logic here (e.g., API or emailjs)
     console.log("Submitted:", formData);
-
+    recieveEmail(formData);
     toast.success("Message sent successfully!", {
       position: "top-right",
     });

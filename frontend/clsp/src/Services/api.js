@@ -1,5 +1,6 @@
 const API_BASE_URL = "http://localhost:5000/api/"; // Replace with your API URL
 export const endpoint = {
+    //auth 
     LOGIN: API_BASE_URL + "auth/login",
     SIGN_UP: API_BASE_URL + "auth/signup",
     VERIFY_EMAIL_OTP: API_BASE_URL + "auth/verify-email-otp",
@@ -9,6 +10,7 @@ export const endpoint = {
     FORGOT_PASS: API_BASE_URL + "auth/forgot-password",
     RESET_PASS: API_BASE_URL + "auth/reset-password",
     VERIFY_RESET: API_BASE_URL + "auth/verify-reset-otp",
+    RECIEVE_EMAIL: API_BASE_URL + "auth/public-info",
     // USer Profile
     USER_PROFILE: API_BASE_URL + "user/userProfile",
     UPDATE_PROFILE:API_BASE_URL+ "user/updateUser",
@@ -38,8 +40,7 @@ export const endpoint = {
     UPDATE_SERVICE_DATA:API_BASE_URL+"service/:serviceId",
     ADD_SLOTS:API_BASE_URL+"service/:serviceId/slots",
     DELIVERY_STATUS:API_BASE_URL+"service/:serviceId/slot/:slotId/delivery",    
-
-
+    GET_REVIEWS:API_BASE_URL+"service/service/getReviewDetails",
 
     // Notification
     ADD_NOTIFICATION:API_BASE_URL+"Notification/add",

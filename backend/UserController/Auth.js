@@ -2,6 +2,7 @@ const User = require("../models/User.js")
 const Otp = require("../models/Otp.js")
 const sendEmail=require('../utils/sendEmail.js')
 const sendSms=require('../utils/sendSms.js')
+const receiveEmail=require('../utils/recieveemail.js')
 
 const bcrypt = require('bcrypt');
 const jwt=require('jsonwebtoken');
@@ -325,4 +326,18 @@ const resetPassword = async (req, res) => {
     }
 };
 
-module.exports = { Login, Signup,verifyPhoneOtp,verifyEmailOtp,requestEmailOtp,requestPhoneOtp,forgotPassword, verifyResetOtp, resetPassword }
+const  UserEmailQuery=async(req,res)=>{
+    const {name,email,subject,message}=req.body
+
+    try {
+        if(!name || !email || !subject || !message){
+            return res.status(400).json({message:"All fields are required"})
+        }
+        await receiveEmail({name,email,subject,message})
+        return res.status(200).json({message:"Query Sent Successfully"})
+    } catch (error) {
+        return res.status(500).json({message:"Server Error",error})
+    }   
+}
+
+module.exports = { Login, Signup,verifyPhoneOtp,verifyEmailOtp,requestEmailOtp,requestPhoneOtp,forgotPassword, verifyResetOtp, resetPassword ,UserEmailQuery}

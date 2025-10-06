@@ -1,6 +1,6 @@
 import apiConnector from "../apiconfig.js"
 import { endpoint } from "../api.js";
-const {LOGIN,SIGN_UP,VERIFY_EMAIL_OTP,VERIFY_PHONE_OTP,REQ_EMAIL_OTP,REQ_PHONE_OTP,RESET_PASS,FORGOT_PASS,VERIFY_RESET,USER_PROFILE,UPDATE_PROFILE,DELETE_PROFILE} =endpoint;
+const {LOGIN,SIGN_UP,VERIFY_EMAIL_OTP,VERIFY_PHONE_OTP,REQ_EMAIL_OTP,REQ_PHONE_OTP,RESET_PASS,FORGOT_PASS,VERIFY_RESET,USER_PROFILE,UPDATE_PROFILE,DELETE_PROFILE,RECIEVE_EMAIL} =endpoint;
 
 
 // 🔹 Fetch Orders
@@ -148,4 +148,12 @@ export const verifyEmailOtp = async (data) => {
   };
   
 
-  
+  export const recieveEmail = async (data) => {
+    try {
+      const response = await apiConnector.post(RECIEVE_EMAIL, data);
+      console.log(response.data, "recieveEmail");
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || "Failed to recieveEmail!";
+    }
+  }

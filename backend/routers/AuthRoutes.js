@@ -8,8 +8,8 @@ const {
     verifyPhoneOtp,
     forgotPassword,
      verifyResetOtp, 
-     resetPassword
-} = require("../UserController/Auth.js");
+     resetPassword,
+    UserEmailQuery} = require("../UserController/Auth.js");
 const authMiddleware=require('../middleware/authmiddleware.js')
 const adminMiddleware=require('../middleware/adminmiddleware.js')
 
@@ -27,6 +27,8 @@ route.post("/forgot-password", forgotPassword);
 route.post("/verify-reset-otp", verifyResetOtp);  
 route.post("/reset-password", resetPassword);  
 
+//routers without authmiddleware
+route.post("/public-info", UserEmailQuery)
 
 route.get("/profile", authMiddleware, (req, res) => {
     res.json({ message: "Welcome, User Profile", user: req.user });

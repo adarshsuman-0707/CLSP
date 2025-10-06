@@ -38,8 +38,8 @@ const Notification = () => {
 
   return (
     <div className="container py-4">
-        <br></br>
-        <br></br>
+      <br></br>
+      <br></br>
       <h3 className="mb-3">Notifications</h3>
 
       {loading && <p>Loading...</p>}
@@ -50,7 +50,19 @@ const Notification = () => {
       <div className="row">
         {notifications.map(n => (
           <div key={n._id} className="col-md-3 mb-3 fade-in">
-            <div className="card shadow-sm">
+            <div className="card  shadow-lg"
+              style={{
+                transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                cursor: "pointer",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = "scale(1.03)";
+                e.currentTarget.style.boxShadow = "0 8px 20px rgba(0, 0, 0, 0.15)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = "scale(1)";
+                e.currentTarget.style.boxShadow = "none";
+              }}>
               <div className="card-body">
                 <h5 className="card-title">{n.title}</h5>
                 <p className="card-text">{n.message}</p>

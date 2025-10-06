@@ -124,6 +124,9 @@ const Navbars = () => {
               <>
                 <Nav.Link href="#about" onClick={handleClose}>About Us</Nav.Link>
                 <Nav.Link href="#services" onClick={handleClose}>Services</Nav.Link>
+                <Nav.Link href="#contactUs" onClick={handleClose}>Contactus</Nav.Link>
+                <Nav.Link href={role==="service"?"/service/profile":"/user/profile"} onClick={handleClose}>Profile</Nav.Link>
+
                 <Button variant="danger" className="mt-3" onClick={handleLogoutToggle}>Logout</Button>
               </>
             ) : (

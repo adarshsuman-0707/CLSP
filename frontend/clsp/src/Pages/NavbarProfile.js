@@ -24,7 +24,7 @@ const NavbarProfile= () => {
     navigate("/user/profile");
   };
     const handleServicePRofileToggle = () => {
-    navigate("/Facilator/profile");
+    navigate("/service/profile");
   };
   const handleServiceClick=()=>{
 navigate("/service/serviceall")
@@ -97,7 +97,8 @@ navigate("/service/serviceall")
               <span>Logout</span>
             </button>
           </li>
-          <li>
+          
+          {/* <li>
             <button onClick={handleServiceClick}>
   <svg
     width="16"
@@ -116,7 +117,7 @@ navigate("/service/serviceall")
   <span>Service</span>
 </button>
 
-          </li>
+          </li> */}
         </ul>
       </nav>
     </label>
@@ -145,8 +146,8 @@ navigate("/service/serviceall")
           <Nav className="flex-column">
             {isAuthenticated ? (
               <>
-                <Nav.Link href="#about" onClick={handleClose}>About Us</Nav.Link>
-                <Nav.Link href="#services" onClick={handleClose}>Services</Nav.Link>
+                <Nav.Link href="#" onClick={()=>{navigate('/')}}>Home</Nav.Link>
+              
                 <Button variant="danger" className="mt-3" onClick={handleLogoutToggle}>Logout</Button>
               </>
             ) : (

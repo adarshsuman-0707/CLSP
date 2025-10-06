@@ -6,6 +6,7 @@ const HistoryServiceDoneStatus = require("../models/History"); // adj
 const User = require("../models/User.js");
 const review = require("../models/reviewSchema.js");
 const cron = require("node-cron");
+const reviewSchema = require("../models/reviewSchema.js");
 const addService = async (req, res) => {
   try {
     const { creatorId } = req.params;
@@ -465,4 +466,19 @@ const DeliveryServiceStatus=async(req,res)=>{
     res.status(500).json({ message: "Something went wrong" });
   } 
 };
-module.exports = { addService, deleteSlotFromService, updateSlotBookingStatus, Allservices, bookServiceSlot, getBookingRequests,updateSlotStatus,updateService,addServiceSlot,DeliveryServiceStatus };
+const getuserReview = async (req, res) => {
+  try {
+    const userId = req.user._id;
+const completedService = await HistoryServiceDoneStatus.findOne({ serviceman: userId });
+console.log(completedService._id); // Works now
+
+const fetchedReview = await reviewSchema.find({ reviewCardId: completedService._id });
+res.status(200).json({ completedServices: [completedService], fetchedReview });
+  } catch (error) {
+
+    console.error("Get Completed Deliveries Error:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+module.exports = { addService, deleteSlotFromService, updateSlotBookingStatus, Allservices, bookServiceSlot, getBookingRequests,updateSlotStatus,updateService,addServiceSlot,DeliveryServiceStatus ,getuserReview};

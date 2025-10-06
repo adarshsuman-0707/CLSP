@@ -1,0 +1,11 @@
+                                style={{
+                                        transition: "transform 0.3s ease, box-shadow 0.3s ease",
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.transform = "scale(1.03)";
+                                        e.currentTarget.style.boxShadow = "0 8px 20px rgba(0, 0, 0, 0.15)";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.transform = "scale(1)";
+                                        e.currentTarget.style.boxShadow = "none";
+                                    }}
