@@ -46,6 +46,10 @@ const historySchema = new mongoose.Schema({
   },
   additionalNotes: {
     type: String
+  },
+  paymentStatus:{
+    type:Boolean,
+    default:false
   }
 }, { timestamps: true });
 

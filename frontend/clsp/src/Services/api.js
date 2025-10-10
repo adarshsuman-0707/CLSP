@@ -47,5 +47,8 @@ export const endpoint = {
     GET_NOTIFICATION:API_BASE_URL+"Notification/list",
     MARK_AS_READ:API_BASE_URL+"Notification/:id/read",
 
+    //Payment Section
+    MAKE_PAYMENT:API_BASE_URL+"payment/makePayment",
+    VERIFY_PAYMENT:API_BASE_URL+"payment/verify"
 }
 export default API_BASE_URL;

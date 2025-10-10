@@ -16,8 +16,8 @@ function GlobalShortCut() {
         h: "/",               // Home
         l: "/login",          // Login
         s: "/signup",         // Signup
-        f: "/forgot",         // Forgot Password
-        p: "/service/serviceall" // Services Page
+        f: "/forgot"       // Forgot Password
+        // p: "/service/serviceall" // Services Page
       };
 
       // Role-specific routes

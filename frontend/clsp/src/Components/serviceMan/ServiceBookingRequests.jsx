@@ -838,6 +838,8 @@ const ServicePage = () => {
         setLoading(true);
         try {
             await servicerUpdateBookingStatus(serviceId, requestId, token, status);
+            if(status=='Rejected')
+            await  handleDeliveryServiceStatus(serviceId,requestId,"pending",token) 
             toast.success("Status updated successfully");
         } catch (e) {
             toast.error("Failed to update status");
@@ -951,8 +953,17 @@ const ServicePage = () => {
         setLoading(true);
         try{
             await DeliveryServiceStatus(serviceId,requestId,status,token);
+            if(status=='completed')
             toast.success("Service marked as completed.");
-            fetchData();
+            else
+                toast.success("Service Marked as Failed")
+             setRequestsByService((prev) => ({
+            ...prev,
+            [serviceId]: prev[serviceId].map((req) =>
+                req._id === requestId ? { ...req, ServiceDeliveryStatus: status } : req
+            ),
+        }));
+            await fetchData();
         }
         catch(error){
             toast.error("Failed to mark service as completed.");
@@ -1085,7 +1096,9 @@ const ServicePage = () => {
                                                                         className="btn btn-primary ms-2"
                                                                         onClick={() =>
                                                                             handleUserRequestStatus(service._id, req._id, token, "Approved")
+                                                                             
                                                                         }
+                                                                        disabled={req.bookingStatus==="Approved"}
                                                                     >
                                                                         Accept
                                                                     </button>
@@ -1094,6 +1107,7 @@ const ServicePage = () => {
                                                                         onClick={() =>
                                                                             handleUserRequestStatus(service._id, req._id, token, "Rejected")
                                                                         }
+                                                                          disabled={req.bookingStatus==="Rejected"}
                                                                     >
                                                                         Reject
                                                                     </button>
@@ -1103,8 +1117,8 @@ const ServicePage = () => {
                                                             <p><strong>Email:</strong> {req.bookedBy?.email || "N/A"}</p>
                                                             <p><strong>Address:</strong> {req.bookedBy?.address || "N/A"}</p>
                                                             <p><strong>Pincode:</strong> {req.bookedBy?.pincode || "N/A"}</p>
-                                                           <p style={{width:"500px"}}> <button className='btn btn-info' onClick={() => { handleDeliveryServiceStatus(service._id,req._id,"completed",token) }}>Done</button>
-                                                            <button className='btn btn-danger' onClick={() => { handleDeliveryServiceStatus(service._id,req._id,"failed",token) }}>Cancel</button>
+                                                           <p style={{width:"100%"}} className='d-flex justify-content-around'> <button className='btn btn-info' onClick={() => { handleDeliveryServiceStatus(service._id,req._id,"completed",token) }} disabled={req.ServiceDeliveryStatus === "completed" ||req.ServiceDeliveryStatus === "failed"}>Done</button>
+                                                            <button className='btn btn-danger' onClick={() => { handleDeliveryServiceStatus(service._id,req._id,"failed",token) }}disabled={req.ServiceDeliveryStatus === "failed"|| req.ServiceDeliveryStatus === "completed"}>Cancel</button>
                                                             </p>
                                                             </>):(<p>No User Booked </p>)}
 

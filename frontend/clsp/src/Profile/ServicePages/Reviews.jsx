@@ -11,24 +11,26 @@ const Reviews = () => {
   const [error, setError] = useState(null);
 
   const token = localStorage.getItem("token");
+useEffect(() => {
+  AOS.init({ duration: 800 });
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const response = await getReviewByUser(token);
+      if (response?.completedServices)
+        setCompletedServices(response.completedServices.flat());
+      if (response?.fetchedReview)
+        setFetchedReviews(response.fetchedReview);
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setError("Failed to load reviews.");
+    } finally {
+      setLoading(false);
+    }
+  };
+  loadData();
+}, [token]);
 
-  useEffect(() => {
-    AOS.init({ duration: 800 }); // Initialize AOS animation
-    const loadData = async () => {
-      try {
-        setLoading(true);
-        const response = await getReviewByUser(token);
-        if (response?.completedServices) setCompletedServices(response.completedServices);
-        if (response?.fetchedReview) setFetchedReviews(response.fetchedReview);
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        setError("Failed to load reviews.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadData();
-  }, [token]);
 
   if (loading) return <p className="text-center">Loading...</p>;
   if (error) return <p className="text-center text-danger">{error}</p>;

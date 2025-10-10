@@ -398,8 +398,8 @@ const DeliveryServiceStatus=async(req,res)=>{
     console.log(status,"status")
 
     // 1. validate status
-    if (!['completed', 'failed'].includes(status)) {
-      return res.status(400).json({ message: "Status must be completed or failed" });
+    if (!['completed', 'failed','pending'].includes(status)) {
+      return res.status(400).json({ message: "Status must be completed , failed or pending" });
     } 
     // 2. service fetch karo
     const service = await Service.findById(serviceId).populate("availableSlots.bookedBy", "name email");
@@ -469,16 +469,27 @@ const DeliveryServiceStatus=async(req,res)=>{
 const getuserReview = async (req, res) => {
   try {
     const userId = req.user._id;
-const completedService = await HistoryServiceDoneStatus.findOne({ serviceman: userId });
-console.log(completedService._id); // Works now
 
-const fetchedReview = await reviewSchema.find({ reviewCardId: completedService._id });
-res.status(200).json({ completedServices: [completedService], fetchedReview });
+    // 1️⃣ Find all completed services for this serviceman
+    const completedService = await HistoryServiceDoneStatus.find({ serviceman: userId });
+
+    // 2️⃣ Extract all completed service IDs
+    const completedServiceIds = completedService.map(service => service._id);
+
+    // 3️⃣ Find all reviews linked to any of those service IDs
+    const fetchedReview = await reviewSchema.find({
+      reviewCardId: { $in: completedServiceIds }
+    });
+
+    // 4️⃣ Send response (same format as you wanted)
+    res.status(200).json({
+      completedServices: [completedService],
+      fetchedReview
+    });
+
   } catch (error) {
-
     console.error("Get Completed Deliveries Error:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
-
 module.exports = { addService, deleteSlotFromService, updateSlotBookingStatus, Allservices, bookServiceSlot, getBookingRequests,updateSlotStatus,updateService,addServiceSlot,DeliveryServiceStatus ,getuserReview};

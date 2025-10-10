@@ -13,7 +13,7 @@ const ShortcutsMenuItem = () => {
         <ul className="list-unstyled mb-0">
           <li><kbd className="bg-secondary px-1 rounded">Ctrl</kbd> + <kbd className="bg-secondary px-1 rounded">D</kbd> : Dashboard/Profile</li>
           <li><kbd className="bg-secondary px-1 rounded">Ctrl</kbd> + <kbd className="bg-secondary px-1 rounded">R</kbd> : Reviews</li>
-          <li><kbd className="bg-secondary px-1 rounded">Ctrl</kbd> + <kbd className="bg-secondary px-1 rounded">N</kbd> : Notifications</li>
+          <li><kbd className="bg-secondary px-1 rounded">Ctrl</kbd> + <kbd className="bg-secondary px-1 rounded">I</kbd> : Notifications</li>
           <li><kbd className="bg-secondary px-1 rounded">Ctrl</kbd> + <kbd className="bg-secondary px-1 rounded">S</kbd> : Saved Service</li>
           <li><kbd className="bg-secondary px-1 rounded">Ctrl</kbd> + <kbd className="bg-secondary px-1 rounded">A</kbd> : Add Service</li>
         </ul>
@@ -52,7 +52,7 @@ const ShortcutsMenuItem = () => {
           Notifications
           <span>
             <kbd className="bg-secondary px-2 rounded">Ctrl</kbd> + 
-            <kbd className="bg-secondary px-2 rounded">N</kbd>
+            <kbd className="bg-secondary px-2 rounded">I</kbd>
           </span>
         </li>
 

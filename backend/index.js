@@ -12,7 +12,7 @@ const AuthRoutes =require('./routers/AuthRoutes.js')
 const UserRoutes=require('./routers/UserRoute.js')
 const serviceRoutes=require('./routers/ServiceRoute.js')
 const NotificationRoutes=require('./routers/NotificationRoutes.js')
-
+const Payment=require('./routers/PaymentRoute.js')
 const app=express();
 // middleware heres
 app.use(express.json())
@@ -31,6 +31,7 @@ app.set('view engine',"ejs")
  app.use('/api/user',UserRoutes);
  app.use('/api/service',serviceRoutes);
  app.use('/api/Notification',NotificationRoutes);
+ app.use('/api/payment',Payment)
 
  const storage = multer.diskStorage({
    destination: function (req, file, cb) {
