@@ -49,6 +49,7 @@ export const endpoint = {
 
     //Payment Section
     MAKE_PAYMENT:API_BASE_URL+"payment/makePayment",
-    VERIFY_PAYMENT:API_BASE_URL+"payment/verify"
+    VERIFY_PAYMENT:API_BASE_URL+"payment/verify",
+    GET_PAYMENT_INFO:API_BASE_URL+"payment/GetPaymentinfo"
 }
 export default API_BASE_URL;

@@ -1,6 +1,7 @@
 const Razorpay = require('razorpay');
 const crypto = require('crypto');
-const Payment =require('../models/PaymentStatus.js')
+const Payment = require('../models/PaymentStatus.js')
+const HistoryService = require('../models/History.js')
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
   key_secret: process.env.RAZORPAY_KEY_SECRET,
@@ -51,8 +52,9 @@ const MakePayment = async (req, res) => {
 // ✅ Verify payment signature (after success)
 const VerifyPayment = async (req, res) => {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, ServiceId ,amount,userId } = req.body;
 
+    console.log(req.body, " Verified Kro ")
     const body = razorpay_order_id + "|" + razorpay_payment_id;
 
     const expectedSignature = crypto
@@ -63,6 +65,26 @@ const VerifyPayment = async (req, res) => {
     const isAuthentic = expectedSignature === razorpay_signature;
 
     if (isAuthentic) {
+      const updatedService = await HistoryService.findByIdAndUpdate(
+        ServiceId,
+        { $set: { paymentStatus: true } },
+        { new: true }
+      );
+      if (!updatedService) {
+        return res.status(404).json({ success: false, message: "Service not found" });
+      }
+      await SavePaymentDetails({
+        user:userId,
+        orderId: razorpay_order_id,
+        amount,
+        status: "success",
+        paymentResponse: {
+          razorpay_order_id,
+          razorpay_payment_id,
+          razorpay_signature,
+        },
+      });
+
       return res.status(200).json({ success: true, message: "Payment verified successfully" });
     } else {
       return res.status(400).json({ success: false, message: "Invalid signature" });
@@ -72,13 +94,13 @@ const VerifyPayment = async (req, res) => {
     res.status(500).json({ success: false, message: "Server Error", error: error.message });
   }
 };
-const SavePaymentDetails =async(req,res)=>{
+const SavePaymentDetails = async (body) => {
   try {
-    const { user, orderId, amount, currency, paymentMethod, status, paymentGateway, paymentResponse } = req.body;
+    const { user, orderId, amount, currency, paymentMethod, status, paymentGateway, paymentResponse } = body;
 
-    if (!user || !orderId || !amount) {
-      return res.status(400).json({ error: "user, orderId and amount are required" });
-    }
+    // if (!user || !orderId || !amount) {
+    //   return res.status(400).json({ error: "user, orderId and amount are required" });
+    // }
 
     // Create new payment
     const payment = new Payment({
@@ -92,16 +114,16 @@ const SavePaymentDetails =async(req,res)=>{
       paymentResponse: paymentResponse || {}
     });
 
-    const savedPayment = await payment.save();
-    res.status(201).json({ success: true, payment: savedPayment });
+    await payment.save();
+    // res.status(201).json({ success: true, payment: savedPayment });
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, error: "Server Error" });
+    // res.status(500).json({ success: false, error: "Server Error" });
   }
 }
 
-const GetPaymentDetail=async(req,res)=>{
+const GetPaymentDetail = async (req, res) => {
   try {
     const payments = await Payment.find().populate("user", "name email");
     res.json({ success: true, payments });
@@ -110,4 +132,4 @@ const GetPaymentDetail=async(req,res)=>{
   }
 }
 
-module.exports = { MakePayment, VerifyPayment ,SavePaymentDetails,GetPaymentDetail};
+module.exports = { MakePayment, VerifyPayment, GetPaymentDetail };

@@ -24,7 +24,7 @@ const Navbars = () => {
     navigate("/user/profile");
   };
     const handleServiceProfileToggle = () => {
-    navigate("/Facilator/profile");
+    navigate("/service/profile");
   };
   const role=localStorage.getItem("role")
 

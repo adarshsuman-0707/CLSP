@@ -20,6 +20,8 @@ import {
   CDBSidebarMenuItem,
 } from 'cdbreact';
 import ShortcutsMenuItem from './ShortcutsMenuItem';
+import PaymentHistory from './PaymentHistory';
+import ServiceManPaymentHistory from '../Profile/ServicePages/ServiceManPaymentHistory.js'
 
 function Dashboard() {
   const role = localStorage.getItem("role");
@@ -33,43 +35,61 @@ function Dashboard() {
     localStorage.setItem("activeSection", section);
   };
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.ctrlKey) {
-        switch (e.key.toLowerCase()) {
-          case 'd':
+ useEffect(() => {
+  const handleKeyDown = (e) => {
+    if (e.ctrlKey && !e.altKey && !e.shiftKey) { // Ctrl only, no conflicts
+      switch (e.key.toLowerCase()) {
+        case 'p': // Profile
+          e.preventDefault();
+          handleSetActiveSection("account");
+          break;
+        case 'b': // Book Service / Service Requests
+          e.preventDefault();
+          if (role === 'user') {
+            handleSetActiveSection("services");
+          } else {
+            handleSetActiveSection("serviceRequests");
+          }
+          break;
+        case 's': // Saved / Add Service
+          e.preventDefault();
+          handleSetActiveSection("savedService");
+          break;
+        case 'v': // Reviews & Rating
+          e.preventDefault();
+          handleSetActiveSection("reviews");
+          break;
+        case 'i': // Notifications
+          e.preventDefault();
+          handleSetActiveSection("notifications");
+          break;
+        case 'y': // Payment / Payment History
+          e.preventDefault();
+          handleSetActiveSection("payment");
+          break;
+        case 'x':
+         if(role=="user"){
+             e.preventDefault();
+          handleSetActiveSection("paymentHistory");
+         } 
+         else{
             e.preventDefault();
-            handleSetActiveSection("account");
-            break;
-          case 'r':
-            e.preventDefault();
-            handleSetActiveSection("reviews");
-            break;
-          case 'i':
-            e.preventDefault();
-            handleSetActiveSection("notifications");
-            break;
-          case 's':
-            e.preventDefault();
-            if (role === 'user') {
-              handleSetActiveSection("savedService");
-            } else {
-              handleSetActiveSection("savedService");
-            }
-            break;
-          default:
-            break;
-        }
+          handleSetActiveSection("payment");
+         }
+         break;
+        case 'k': // Shortcuts
+          e.preventDefault();
+          handleSetActiveSection("ShortCuts");
+          break;
+        default:
+          break;
       }
-    };
+    }
+  };
 
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [role]);
+  window.addEventListener("keydown", handleKeyDown);
+  return () => window.removeEventListener("keydown", handleKeyDown);
+}, [role]);
 
   const renderSection = () => {
     switch (activeSection) {
@@ -86,7 +106,7 @@ function Dashboard() {
         case 'ShortCuts':
         return <ShortcutsMenuItem/>;
         case 'payment':
-        return <Payment/>;
+          return <ServiceManPaymentHistory/>
       default:
         return <div className="text-center mt-5"><DashboardPage/></div>;
     }
@@ -96,7 +116,7 @@ function Dashboard() {
     switch (activeSection) {
       case 'account':
         return <AccountSettings />;
-      case 'serviceRequests':
+      case 'services':
         return <BookService />;
       case 'savedService':
         return <SavedService />;
@@ -108,6 +128,8 @@ function Dashboard() {
         return <ShortcutsMenuItem/>
          case 'payment':
         return <Payment/>;
+        case 'paymentHistory':
+        return <PaymentHistory/>
       default:
         return <div className="text-center mt-5"><DashboardPage/></div>;
     }
@@ -127,10 +149,10 @@ function Dashboard() {
               <>
                 <CDBSidebarMenu>
                   <div onClick={() => handleSetActiveSection("account")}>
-                    <CDBSidebarMenuItem icon="columns">Profile</CDBSidebarMenuItem>
+                    <CDBSidebarMenuItem icon="user">Profile</CDBSidebarMenuItem>
                   </div>
-                  <div onClick={() => handleSetActiveSection("serviceRequests")}>
-                    <CDBSidebarMenuItem icon="table">Service Available</CDBSidebarMenuItem>
+                  <div onClick={() => handleSetActiveSection("services")}>
+                    <CDBSidebarMenuItem icon="tools">Service Available</CDBSidebarMenuItem>
                   </div>
                   <div onClick={() => handleSetActiveSection("savedService")}>
                     <CDBSidebarMenuItem icon="heart">Saved Service</CDBSidebarMenuItem>
@@ -141,13 +163,15 @@ function Dashboard() {
                   <div onClick={() => handleSetActiveSection("notifications")}>
                     <CDBSidebarMenuItem icon="exclamation-circle">Notifications</CDBSidebarMenuItem>
                   </div>
+                   <div onClick={() => handleSetActiveSection("payment")}>
+                    <CDBSidebarMenuItem icon="credit-card">Payment</CDBSidebarMenuItem>
+                  </div>
+                    <div onClick={() => handleSetActiveSection("paymentHistory")}>
+                    <CDBSidebarMenuItem icon="history">PaymentHistory</CDBSidebarMenuItem>
+                  </div>
                     <div onClick={() => handleSetActiveSection("ShortCuts")}>
                     <CDBSidebarMenuItem icon="info">Shortcuts</CDBSidebarMenuItem>
                   </div>
-                   <div onClick={() => handleSetActiveSection("payment")}>
-                    <CDBSidebarMenuItem icon="money-bill-wave">Payment</CDBSidebarMenuItem>
-                  </div>
-                  
                   
                 </CDBSidebarMenu>
 
@@ -157,7 +181,7 @@ function Dashboard() {
               <>
                 <CDBSidebarMenu>
                   <div onClick={() => handleSetActiveSection("account")}>
-                    <CDBSidebarMenuItem icon="columns">Profile</CDBSidebarMenuItem>
+                    <CDBSidebarMenuItem icon="user">Profile</CDBSidebarMenuItem>
                   </div>
                   <div onClick={() => handleSetActiveSection("savedService")}>
                     <CDBSidebarMenuItem icon="plus">Add Service</CDBSidebarMenuItem>
@@ -171,14 +195,12 @@ function Dashboard() {
                   <div onClick={() => handleSetActiveSection("notifications")}>
                     <CDBSidebarMenuItem icon="exclamation-circle">Notifications</CDBSidebarMenuItem>
                   </div>
+                    <div onClick={() => handleSetActiveSection("payment")}>
+                    <CDBSidebarMenuItem icon="history">Pay History</CDBSidebarMenuItem>
+                  </div>
                    <div onClick={() => handleSetActiveSection("ShortCuts")}>
                     <CDBSidebarMenuItem icon="info">Shortcuts</CDBSidebarMenuItem>
                   </div>
-                  <div onClick={() => handleSetActiveSection("payment")}>
-                    <CDBSidebarMenuItem icon="money-bill-wave">Payment</CDBSidebarMenuItem>
-                  </div>
-                  
-                  
                 </CDBSidebarMenu>
 
                 {/* Shortcuts */}
