@@ -9,3 +9,24 @@
                                         e.currentTarget.style.transform = "scale(1)";
                                         e.currentTarget.style.boxShadow = "none";
                                     }}
+{
+  "username": "adarsh123",
+  "email": "adarshsumanemail@gmail.com",
+  "contact": "9876543210",
+  "password": "Password@123",
+  "role": "service",
+  "firstname": "Adarsh",
+  "lastname": "Suman",
+  "gender": "male",
+  "address": "MG Road, Bhopal",
+  "pincode": "462001",
+  "country": "India",
+  "state": "Madhya Pradesh",
+  "city": "Bhopal"
+}
+"email": "adarsh@gmail.com",
+"password": "Password@123",
+
+"email": "adarshsumanemail@gmail.com",
+"password": "123456789",
+https://clspbackend-production.up.railway.app/api/auth/Signup
