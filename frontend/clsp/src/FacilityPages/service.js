@@ -176,7 +176,7 @@ const ServiceList = () => {
           <p>No services match your search.</p>
         ) : (
           <div className="accordion" id="servicesAccordion">
-            {filteredServices.map((service, index) => (
+            {filteredServices.map((service, index) => ( service.availableSlots.length > 0 && (
               <div className="accordion-item mb-4" key={service._id}>
                 <h2 className="accordion-header" id={`heading-${index}`}>
                   <button
@@ -264,7 +264,7 @@ const ServiceList = () => {
                   </div>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         )}
       </div>

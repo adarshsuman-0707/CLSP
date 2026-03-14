@@ -1,4 +1,7 @@
+// const API_BASE_URL = "https://clspbackend-production.up.railway.app/api/";
+//  // Replace with your API URL
 const API_BASE_URL = "http://localhost:5000/api/"; // Replace with your API URL
+
 export const endpoint = {
     //auth 
     LOGIN: API_BASE_URL + "auth/login",
