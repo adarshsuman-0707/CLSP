@@ -3,47 +3,37 @@ name: CI
 on:
   push:
     branches: [main, master]
-  pull_request:
-    branches: [main, master]
 
 jobs:
+
   backend:
-    name: Backend (Node.js)
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: 18
 
-      - name: Install backend dependencies
-        run: npm ci
+      - run: npm install
+
 
   frontend:
-    name: Frontend (React)
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: frontend/clsp
+
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
-          node-version: '18'
-          cache: 'npm'
+          node-version: 18
 
-      - name: Install frontend dependencies
-        run: npm ci
-
-      - name: Build frontend
-        run: npm run build
+      - run: npm install
+      - run: npm run build
