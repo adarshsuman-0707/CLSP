@@ -5,8 +5,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 
 function App({ data }) {
   // Show toast notification when the component renders
-    toast.error("❌ Failed to send email OTP. Try again!", { autoClose: 2000 });
-
+  toast.error("❌ Failed to send email OTP. Try again!", { autoClose: 2000 });
 
   return (
     <div>

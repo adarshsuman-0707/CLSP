@@ -21,43 +21,39 @@ import GlobalShortCut from './GlobalShortCut.jsx';
 import SavedService from './Profile/SavedService.js';
 import PublicRoute from './publicRouteWrapper.js';
 import UpdateServicePopup from './Components/serviceMan/UpdateServicePopup.jsx';
-const root = ReactDOM.createRoot(document.getElementById('root'));
+const container = document.getElementById('root');
 
-root.render(
+if (container) {
+  const root = ReactDOM.createRoot(container);
+  root.render(
+    <BrowserRouter>
+      <GlobalShortCut />
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/signup" element={<PublicRoute element={<Signup />} />} />
+        <Route path="/login" element={<PublicRoute element={<Login />} />} />
+        <Route path="/forgot" element={<ForgotPassword />} />
 
-  <BrowserRouter>
-    <GlobalShortCut />
-    <Routes>
-      {/* <Route path='/user/profile/upload' element={<UserProfile/>}/> */}
-      <Route path="/" element={<Home />} />
-      <Route path="/signup" element={<PublicRoute element={<Signup />} />} />
-      <Route path="/login" element={<PublicRoute element={<Login />} />} />
-      <Route path="/forgot" element={<ForgotPassword />} />
+        <Route element={<ProtectedRoute allowedRoles={["user"]} />}>
+          <Route path="/user/profile" element={<Dashboard />} />
+          <Route path="/user/service" element={<Service />} />
+          <Route path="/user/savedservices" element={<SavedService />} />
+        </Route>
 
-      {/* Only for USERS */}
-      <Route element={<ProtectedRoute allowedRoles={["user"]} />}>
-        <Route path="/user/profile" element={<Dashboard />} />
-        <Route path="/user/service" element={<Service />} />
-        <Route path="/user/savedservices" element={<SavedService />} />
-      </Route>
-      <Route element={<ProtectedRoute allowedRoles={["service"]} />}>
-        <Route path="/Service/profile" element={<Dashboard />} />
-        {/* <Route path="/user/service" element={<Service />} /> */}
-      </Route>
+        <Route element={<ProtectedRoute allowedRoles={["service"]} />}>
+          <Route path="/Service/profile" element={<Dashboard />} />
+        </Route>
 
-      {/* Only for SERVICE PROVIDERS */}
-      <Route element={<ProtectedRoute allowedRoles={["service"]} />}>
-        <Route path="/service/serviceall" element={<ServicePage />} />
-        <Route path="/service/serviceadd" element={<AddServicePage />} />
-        <Route path="/service/UpdateService" element={<UpdateServicePopup />} />
-      </Route>
-      <Route path="/unauthorized" element={<Unauthorized />} />
-      <Route path="*" element={<PageNotFound />} />
-      <Route path="/service/bookRequest" element={<ServiceBookingRequests />} />
-    </Routes>
+        <Route element={<ProtectedRoute allowedRoles={["service"]} />}>
+          <Route path="/service/serviceall" element={<ServicePage />} />
+          <Route path="/service/serviceadd" element={<AddServicePage />} />
+          <Route path="/service/UpdateService" element={<UpdateServicePopup />} />
+        </Route>
 
-  </BrowserRouter>
-
-);
-
-reportWebVitals();
+        <Route path="/unauthorized" element={<Unauthorized />} />
+        <Route path="/service/bookRequest" element={<ServiceBookingRequests />} />
+        <Route path="*" element={<PageNotFound />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}

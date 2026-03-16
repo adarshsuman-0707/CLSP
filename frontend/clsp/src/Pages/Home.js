@@ -33,7 +33,7 @@ const Home = () => {
           <Carousel.Item interval={3000}>
             <img className="d-block w-100" src={plumbing} alt="Plumbing Service 1" />
             <Carousel.Caption data-aos="fade-up">
-              <h1 className="fw-bold text-white">Reliable Plumbing Services</h1>
+              <h1 className="fw-bold text-white">Reliable Adarsh Plumbing Services</h1>
               <p>24/7 Emergency Services | Affordable | Trusted Professionals</p>
               <Link to="services" smooth={true} duration={600} offset={-70}>
                 <Button variant="light" size="lg">
