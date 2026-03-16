@@ -36,4 +36,17 @@ jobs:
           node-version: 18
 
       - run: npm install --legacy-peer-deps
+      - name: Run Test Cases
+        run: npm test -- --watchAll=false
       - run: CI=false npm run build
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
+
+      - name: Deploy to Netlify
+        run: |
+          netlify deploy \
+          --prod \
+          --dir=build \
+          --site=$NETLIFY_SITE_ID \
+          --auth=$NETLIFY_AUTH_TOKEN
+        
