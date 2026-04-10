@@ -243,6 +243,8 @@ const ServicePage = () => {
             ...prev,
             [serviceId]: prev[serviceId].map((req) =>
                 req._id === requestId ? { ...req, ServiceDeliveryStatus: status } : req
+            
+       
             ),
         }));
             await fetchData();
@@ -357,6 +359,7 @@ const ServicePage = () => {
                                         <div className="row">
                                             {requestsByService[service._id]?.length > 0 ? (
                                                 requestsByService[service._id].map((req) => (
+                                                    
                                                     <div className="col-md-6 mb-3" key={req._id}>
                                                         <div className="card p-3 shadow-sm h-100">
                                                             <p><strong>Date:</strong> {new Date(req.date).toDateString()}</p>
@@ -389,7 +392,7 @@ const ServicePage = () => {
                                                                         onClick={() =>
                                                                             handleUserRequestStatus(service._id, req._id, token, "Rejected")
                                                                         }
-                                                                          disabled={req.bookingStatus==="Rejected"}
+                                                                          disabled={req.bookingStatus==="Rejected"|| req.ServiceDeliveryStatus === "completed" }
                                                                     >
                                                                         Reject
                                                                     </button>
@@ -554,3 +557,6 @@ const ServicePage = () => {
 };
 
 export default ServicePage;
+
+
+// change in line no 395 
