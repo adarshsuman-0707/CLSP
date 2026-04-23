@@ -249,9 +249,14 @@ const getInvoiceByBookingId = async (req, res) => {
       return res.status(400).json({ message: "Invalid booking ID." });
     }
 
-    // Search in both booking and packageBooking fields
+    // Search by invoice _id first, then fall back to booking/packageBooking/historyService refs
     const invoice = await Invoice.findOne({
-      $or: [{ booking: bookingId }, { packageBooking: bookingId }],
+      $or: [
+        { _id: isValidObjectId(bookingId) ? bookingId : null },
+        { booking: bookingId },
+        { packageBooking: bookingId },
+        { historyService: bookingId },
+      ],
     })
       .populate("user", "firstname lastname email contact address city state pincode")
       .populate("booking")
@@ -279,13 +284,47 @@ const getInvoiceByBookingId = async (req, res) => {
 
 /**
  * GET /api/invoice/my
- * Returns all invoices for the logged-in user.
+ * Role-aware invoice fetch:
+ *  - user    → invoices where user = req.user._id
+ *  - service → invoices where any item's service was created by this vendor
+ *              (via historyService → History.serviceman, or packageBooking)
+ *  - admin   → all invoices (paginated, newest first)
  */
 const getUserInvoices = async (req, res) => {
   try {
-    const invoices = await Invoice.find({ user: req.user._id })
-      .sort({ createdAt: -1 })
-      .lean();
+    const role   = req.user.role;
+    const userId = req.user._id;
+    let invoices = [];
+
+    if (role === "admin") {
+      // Admin sees all invoices
+      invoices = await Invoice.find({})
+        .populate("user", "firstname lastname email")
+        .sort({ createdAt: -1 })
+        .lean();
+
+    } else if (role === "service") {
+      // Vendor sees invoices for services they delivered
+      // These are linked via historyService → History.serviceman = vendor
+      const History = require("../models/History.js");
+      const vendorHistories = await History.find({ serviceman: userId }, "_id").lean();
+      const historyIds = vendorHistories.map(h => h._id);
+
+      invoices = await Invoice.find({
+        $or: [
+          { historyService: { $in: historyIds } },
+        ]
+      })
+        .populate("user", "firstname lastname email")
+        .sort({ createdAt: -1 })
+        .lean();
+
+    } else {
+      // Regular user — own invoices only
+      invoices = await Invoice.find({ user: userId })
+        .sort({ createdAt: -1 })
+        .lean();
+    }
 
     return res.status(200).json({ message: "Invoices fetched.", data: invoices });
   } catch (error) {
@@ -318,7 +357,12 @@ const downloadInvoicePDF = async (req, res) => {
     }
 
     const invoice = await Invoice.findOne({
-      $or: [{ booking: bookingId }, { packageBooking: bookingId }],
+      $or: [
+        { _id: isValidObjectId(bookingId) ? bookingId : null },
+        { booking: bookingId },
+        { packageBooking: bookingId },
+        { historyService: bookingId },
+      ],
     })
       .populate("user", "firstname lastname email contact address city state pincode")
       .lean();
@@ -327,8 +371,21 @@ const downloadInvoicePDF = async (req, res) => {
       return res.status(404).json({ message: "Invoice not found." });
     }
 
-    if (!isAdmin && invoice.user._id.toString() !== userId.toString()) {
-      return res.status(403).json({ message: "Access denied." });
+    // Auth: admin can download any; user can download own; service can download their delivery invoices
+    if (!isAdmin && req.user.role !== "service") {
+      if (invoice.user._id.toString() !== userId.toString()) {
+        return res.status(403).json({ message: "Access denied." });
+      }
+    }
+
+    // Fetch extra booking details if historyService is set
+    let historyDoc = null;
+    if (invoice.historyService) {
+      const History = require("../models/History.js");
+      historyDoc = await History.findById(invoice.historyService)
+        .populate("user", "firstname lastname email contact address city state pincode")
+        .populate("serviceman", "firstname lastname email contact")
+        .lean();
     }
 
     // ── Build PDF ─────────────────────────────────────────────────────────────
@@ -346,15 +403,9 @@ const downloadInvoicePDF = async (req, res) => {
     // ── Header ────────────────────────────────────────────────────────────────
     doc.fontSize(22).font("Helvetica-Bold").text(co.name, { align: "center" });
     doc.fontSize(10).font("Helvetica").text(co.address, { align: "center" });
-    doc.text(`GSTIN: ${co.gstin}  |  Email: ${co.email}  |  Phone: ${co.phone}`, {
-      align: "center",
-    });
+    doc.text(`GSTIN: ${co.gstin}  |  Email: ${co.email}  |  Phone: ${co.phone}`, { align: "center" });
     doc.moveDown();
-    doc
-      .moveTo(50, doc.y)
-      .lineTo(545, doc.y)
-      .strokeColor("#cccccc")
-      .stroke();
+    doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor("#cccccc").stroke();
     doc.moveDown(0.5);
 
     // ── Invoice meta ──────────────────────────────────────────────────────────
@@ -367,20 +418,31 @@ const downloadInvoicePDF = async (req, res) => {
     doc.moveDown();
 
     // ── Bill To ───────────────────────────────────────────────────────────────
+    // Use historyDoc.user if available (more complete), else fall back to invoice.user
+    const customer = historyDoc?.user || u;
     doc.fontSize(11).font("Helvetica-Bold").text("Bill To:");
     doc.fontSize(10).font("Helvetica");
-    doc.text(`${u.firstname} ${u.lastname}`);
-    doc.text(`Email: ${u.email}`);
-    doc.text(`Phone: ${u.contact}`);
-    doc.text(`Address: ${u.address || ""}, ${u.city || ""}, ${u.state || ""} - ${u.pincode || ""}`);
+    doc.text(`${customer.firstname || ""} ${customer.lastname || ""}`.trim() || "Customer");
+    doc.text(`Email: ${customer.email || "—"}`);
+    doc.text(`Phone: ${customer.contact || "—"}`);
+    doc.text(`Address: ${customer.address || ""}, ${customer.city || ""}, ${customer.state || ""} - ${customer.pincode || ""}`.replace(/^,\s*/, ""));
     doc.moveDown();
 
-    // ── Items table ───────────────────────────────────────────────────────────
-    doc
-      .moveTo(50, doc.y)
-      .lineTo(545, doc.y)
-      .strokeColor("#000000")
-      .stroke();
+    // ── Service Provider (for history-based invoices) ─────────────────────────
+    if (historyDoc?.serviceman) {
+      const sm = historyDoc.serviceman;
+      doc.fontSize(11).font("Helvetica-Bold").text("Service Provider:");
+      doc.fontSize(10).font("Helvetica");
+      doc.text(`${sm.firstname || ""} ${sm.lastname || ""}`.trim() || "Vendor");
+      doc.text(`Email: ${sm.email || "—"}`);
+      doc.text(`Phone: ${sm.contact || "—"}`);
+      if (historyDoc.completedAt) {
+        doc.text(`Completed: ${new Date(historyDoc.completedAt).toLocaleDateString("en-IN")}`);
+      }
+      doc.moveDown();
+    }
+
+    doc.moveTo(50, doc.y).lineTo(545, doc.y).strokeColor("#000000").stroke();
     doc.moveDown(0.3);
 
     // Table header

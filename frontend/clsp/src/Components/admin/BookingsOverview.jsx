@@ -22,13 +22,11 @@ const statusBadge = (status) => {
 };
 
 const deliveryStatusBadge = (status) => {
-  if (!status) return <span className="badge bg-secondary">—</span>;
+  if (!status || status === "pending") return <span className="badge bg-secondary">Pending</span>;
   switch (status) {
-    case "Completed":
+    case "completed":
       return <span className="badge bg-success">Completed</span>;
-    case "InProgress":
-      return <span className="badge bg-primary">In Progress</span>;
-    case "Cancelled":
+    case "failed":
       return <span className="badge bg-danger">Cancelled</span>;
     default:
       return <span className="badge bg-secondary">{status}</span>;
@@ -180,19 +178,20 @@ const BookingsOverview = () => {
 
   const getUserName = (booking) => {
     if (!booking.userId) return "—";
-    return booking.userId.username || booking.userId.email || "—";
+    const u = booking.userId;
+    if (u.firstname) return `${u.firstname} ${u.lastname || ""}`.trim();
+    return u.username || u.email || "—";
   };
 
   const getVendorName = (booking) => {
-    if (!booking.serviceId) return "—";
-    const createdBy = booking.serviceId.createdBy;
+    const createdBy = booking.serviceId?.createdBy;
     if (!createdBy) return "—";
+    if (createdBy.firstname) return `${createdBy.firstname} ${createdBy.lastname || ""}`.trim();
     return createdBy.username || createdBy.email || "—";
   };
 
   const getServiceName = (booking) => {
-    if (!booking.serviceId) return "—";
-    return booking.serviceId.name || booking.serviceId.serviceName || "—";
+    return booking.serviceId?.name || "—";
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -314,7 +313,7 @@ const BookingsOverview = () => {
                     </td>
                     <td>
                       <code className="small text-muted">
-                        {booking._id?.slice(-8)?.toUpperCase()}
+                        {booking.slotId?.toString().slice(-6)?.toUpperCase() || booking._id?.slice(-6)?.toUpperCase()}
                       </code>
                     </td>
                     <td>
@@ -330,8 +329,14 @@ const BookingsOverview = () => {
                         <small className="text-muted">{booking.serviceId.category}</small>
                       )}
                     </td>
-                    <td className="text-nowrap">{formatDate(booking.date)}</td>
-                    <td>{statusBadge(booking.status)}</td>
+                    <td className="text-nowrap">
+                      {formatDate(booking.date)}
+                      {booking.slotTime && <div><small className="text-muted">{booking.slotTime}</small></div>}
+                    </td>
+                    <td>
+                      {statusBadge(booking.status)}
+                      <div className="mt-1">{deliveryStatusBadge(booking.ServiceDeliveryStatus)}</div>
+                    </td>
                   </tr>
                 ))}
               </tbody>

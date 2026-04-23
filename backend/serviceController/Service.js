@@ -116,38 +116,33 @@ const updateSlotBookingStatus = async (req, res) => {
 };
 const Allservices = async (req, res) => {
   try {
-    const userRole = req.user?.role; // Get logged-in user's role
+    const userRole = req.user?.role;
     let query = {};
-    let populateMatch = {};
 
-    // ✅ Role-based filtering
     if (userRole === "user") {
-      // Users see only APPROVED services from VERIFIED, NON-BLOCKED vendors
+      // Users see only APPROVED services
       query.approvalStatus = "approved";
-      populateMatch = { isVerified: true, isBlocked: false };
     } else if (userRole === "service") {
       // Vendors see only their own services (all statuses)
       query.createdBy = req.user._id;
     }
-    // Admin sees all services (no filter)
+    // Admin sees all services — no filter
 
-    const data = await Service.find(query)
-      .populate({
-        path: 'createdBy',
-        select: 'firstname lastname email phone address pincode contact isVerified isBlocked',
-        match: Object.keys(populateMatch).length > 0 ? populateMatch : undefined
-      })
+    let data = await Service.find(query)
+      .populate('createdBy', 'firstname lastname email phone address pincode contact isVerified isBlocked')
       .sort({ createdAt: -1 });
 
-    // ✅ Filter out services where vendor didn't match (for users)
-    const filteredData = data.filter(service => service.createdBy !== null);
-
-    console.log(`Fetched ${filteredData.length} services for role: ${userRole}`);
+    // For users: filter out services whose vendor is blocked/unverified AFTER populate
+    if (userRole === "user") {
+      data = data.filter(
+        (s) => s.createdBy && s.createdBy.isVerified === true && s.createdBy.isBlocked === false
+      );
+    }
 
     res.status(200).json({
       success: true,
       message: "Services fetched successfully",
-      data: filteredData,
+      data,
     });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
@@ -173,11 +168,11 @@ const bookServiceSlot = async (req, res) => {
         });
       }
 
-      // Reset slot to available
+      // Reset slot to available but keep bookedBy for audit trail
       slot.isBooked = false;
-      slot.bookedBy = null;
-      slot.bookingStatus = "pending"; // reset to default (unbooked pending)
-      slot.bookedAt = null;
+      // Keep bookedBy for history
+      slot.bookingStatus = "Rejected"; // mark as rejected (user cancelled)
+      // Keep bookedAt for history
 
       await service.save();
 
@@ -288,7 +283,7 @@ const getBookingRequests = async (req, res) => {
 
     // Service ko fetch karna + populate user details
     const service = await Service.findById(serviceId)
-      .populate("availableSlots.bookedBy", "firstname lastname email phone address pincode");
+      .populate("availableSlots.bookedBy", "firstname lastname email contact phone address pincode city state");
 
     if (!service) {
       return res.status(404).json({ success: false, message: "Service not found" });
@@ -353,10 +348,10 @@ const updateSlotStatus = async (req, res) => {
     slot.bookingStatus = status;
 
     // If rejected, free the slot so others can book
+    // Keep bookedBy for audit trail (admin can still see who booked)
     if (status === 'Rejected') {
       slot.isBooked = false;
-      slot.bookedBy = null;
-      slot.bookedAt = null;
+      // Do NOT null out bookedBy — keep for history/audit
     }
 
     await service.save();

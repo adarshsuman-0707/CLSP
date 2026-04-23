@@ -1,7 +1,8 @@
 const { Router } = require("express");
 const route = Router();
 
-const authMiddleware = require("../middleware/authmiddleware.js");
+const authMiddleware    = require("../middleware/authmiddleware.js");
+const servicemiddleware = require("../middleware/servicemiddleware.js");
 
 const {
   createInvoice,
@@ -15,7 +16,8 @@ const {
 route.post("/generate", authMiddleware, createInvoice);
 
 // ── Fetch invoices ────────────────────────────────────────────────────────────
-// GET  /api/invoice/my                — all invoices for logged-in user
+// GET  /api/invoice/my  — role-aware: user=own, service=their deliveries, admin=all
+// Accept any authenticated role (user, service, admin all use authMiddleware)
 route.get("/my", authMiddleware, getUserInvoices);
 
 // GET  /api/invoice/:bookingId        — invoice for a specific booking

@@ -3,6 +3,7 @@ const route=Router();
 const servicemiddleware=require('../middleware/servicemiddleware.js')
 const authmiddleware=require('../middleware/authmiddleware.js')
 const { emitter } = require('../utils/sseEmitter.js');
+const ServiceCategory = require('../models/ServiceCategory.js');
 
 const {
   addService,
@@ -15,9 +16,22 @@ const {
   addServiceSlot,
   DeliveryServiceStatus,
   getuserReview,
-  deleteService,        // ✅ NEW
-  getVendorServices     // ✅ NEW
+  deleteService,
+  getVendorServices
 } = require('../serviceController/Service.js')
+
+// ── Public: get active categories (used by AddServicePage dropdown) ───────────
+route.get('/categories/public', authmiddleware, async (req, res) => {
+  try {
+    const cats = await ServiceCategory.find({ isActive: true })
+      .select('name')
+      .sort({ name: 1 })
+      .lean();
+    return res.status(200).json({ success: true, data: cats });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: 'Failed to fetch categories' });
+  }
+});
 
 // ── SSE: real-time booking events ─────────────────────────────────────────────
 // GET /api/service/events  (must be before /:serviceId routes)

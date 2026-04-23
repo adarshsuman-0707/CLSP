@@ -48,6 +48,11 @@ export const endpoint = {
     DELIVERY_STATUS:API_BASE_URL+"service/:serviceId/slot/:slotId/delivery",    
     GET_REVIEWS:API_BASE_URL+"service/service/getReviewDetails",
 
+    // Vendor service management
+    VENDOR_MY_SERVICES:       API_BASE_URL+"service/vendor/my-services",
+    DELETE_SERVICE_FULL:      API_BASE_URL+"service/:serviceId",
+    SERVICE_CATEGORIES_PUBLIC:API_BASE_URL+"service/categories/public",
+
     // Notification
     ADD_NOTIFICATION:API_BASE_URL+"Notification/add",
     GET_NOTIFICATION:API_BASE_URL+"Notification/list",

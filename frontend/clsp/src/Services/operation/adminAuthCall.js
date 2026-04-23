@@ -137,10 +137,11 @@ export const getVendorServices = async (vendorId, token) => {
 };
 
 /** PATCH /api/admin/services/:id/approval — approve or reject a service */
+// Backend expects { status: "approved" | "rejected" } NOT { approvalStatus }
 export const updateServiceApproval = async (serviceId, approvalStatus, token) => {
   try {
     const url = ADMIN_SERVICE_APPROVAL.replace(":id", serviceId);
-    const res = await apiConnector.patch(url, { approvalStatus }, {
+    const res = await apiConnector.patch(url, { status: approvalStatus }, {
       headers: { Authorization: `Bearer ${token}` },
     });
     return res.data;

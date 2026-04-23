@@ -6,6 +6,7 @@ import { fetchMyInvoices, downloadInvoicePDF } from "../../Services/operation/in
 
 const InvoiceList = () => {
   const token = localStorage.getItem("token");
+  const role  = localStorage.getItem("role");
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState(null);
@@ -26,10 +27,11 @@ const InvoiceList = () => {
   }, [token]);
 
   const handleDownload = async (invoice) => {
-    // Use booking or packageBooking id as the route param
-    const refId = invoice.booking || invoice.packageBooking;
+    // Pass invoice._id directly — backend now looks up by invoice ID first,
+    // then falls back to booking/packageBooking/historyService refs
+    const refId = invoice._id;
     if (!refId) {
-      toast.error("Cannot download: booking reference missing.");
+      toast.error("Cannot download: invoice ID missing.");
       return;
     }
     setDownloadingId(invoice._id);
@@ -71,7 +73,13 @@ const InvoiceList = () => {
         <div className="text-center py-5">
           <div className="fs-1">🧾</div>
           <h5 className="mt-2">No invoices yet</h5>
-          <p className="text-muted">Invoices are generated after your bookings are completed.</p>
+          <p className="text-muted">
+            {role === "admin"
+              ? "No invoices have been generated in the system yet."
+              : role === "service"
+              ? "Invoices will appear here after you complete service deliveries."
+              : "Invoices are generated after your bookings are completed."}
+          </p>
         </div>
       ) : (
         <div className="row g-4">
@@ -98,6 +106,29 @@ const InvoiceList = () => {
                               year: "numeric",
                             })}
                           </small>
+                          {/* Show customer name for admin/service */}
+                          {(role === "admin" || role === "service") && inv.user && (
+                            <div className="mt-1">
+                              <span className="badge bg-secondary bg-opacity-10 text-secondary">
+                                👤 {inv.user.firstname
+                                  ? `${inv.user.firstname} ${inv.user.lastname || ""}`.trim()
+                                  : inv.user.email || "User"}
+                              </span>
+                            </div>
+                          )}
+                          {/* Invoice type badge */}
+                          <div className="mt-1">
+                            <span className={`badge ${
+                              inv.packageBooking ? "bg-info text-dark" :
+                              inv.historyService ? "bg-success" : "bg-primary"
+                            } bg-opacity-10 ${
+                              inv.packageBooking ? "text-info" :
+                              inv.historyService ? "text-success" : "text-primary"
+                            }`}>
+                              {inv.packageBooking ? "📦 Package" :
+                               inv.historyService ? "✅ Service" : "📋 Booking"}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     </div>

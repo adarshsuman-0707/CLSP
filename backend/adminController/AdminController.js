@@ -260,7 +260,8 @@ const VALID_APPROVAL_STATUSES = ["approved", "rejected"];
 const updateServiceApproval = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const  status  = req.body.status;
+    console.log(status)
 
     if (!status || !VALID_APPROVAL_STATUSES.includes(status)) {
       return res.status(400).json({
@@ -323,57 +324,100 @@ const getVendorServices = async (req, res) => {
 
 /**
  * GET /api/admin/bookings
- * Paginated list of all bookings with optional filters.
- * Query params:
- *   page (default 1), limit (default 10)
- *   status — optional: "Pending" | "Confirmed" | "Cancelled"
- *   dateFrom, dateTo — optional ISO date strings, filter on createdAt
+ * Reads bookings from Service.availableSlots (the actual booking store).
+ * Query params: page, limit, status (Pending|Approved|Rejected|completed|failed), dateFrom, dateTo
  */
+const History = require("../models/History.js");
+
 const getAllBookings = async (req, res) => {
   try {
-    const page = parseInt(req.query.page) || 1;
+    const page  = parseInt(req.query.page)  || 1;
     const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
+    const skip  = (page - 1) * limit;
 
-    const query = {};
+    const { status, dateFrom, dateTo } = req.query;
 
-    if (req.query.status) {
-      query.status = req.query.status;
+    // Pull all services with booked OR rejected slots
+    // Note: Rejected slots have isBooked=false (slot freed) but bookingStatus="Rejected"
+    const services = await Service.find({
+      $or: [
+        { "availableSlots.isBooked": true },
+        { "availableSlots.bookingStatus": "Rejected" },
+      ]
+    })
+      .populate("createdBy", "firstname lastname username email contact")
+      .lean();
+
+    // Flatten slots into booking-like objects
+    let allBookings = [];
+    for (const svc of services) {
+      for (const slot of svc.availableSlots) {
+        // Include: booked slots OR rejected slots (rejected = was booked, then rejected)
+        const isRejected = slot.bookingStatus === "Rejected";
+        if (!slot.isBooked && !isRejected) continue;
+
+        // Map slot bookingStatus → display status
+        const displayStatus =
+          slot.bookingStatus === "Approved"  ? "Confirmed" :
+          slot.bookingStatus === "Rejected"  ? "Cancelled" : "Pending";
+
+        // Use ObjectId timestamp as reliable booking date (bookedAt can be null for rejected slots)
+        let bookedAt = null;
+        try { bookedAt = slot._id.getTimestamp(); } catch { bookedAt = null; }
+
+        // Date range filter
+        if (dateFrom && bookedAt && bookedAt < new Date(dateFrom)) continue;
+        if (dateTo   && bookedAt && bookedAt > new Date(dateTo))   continue;
+
+        // Status filter
+        if (status && status !== "All") {
+          if (status === "Confirmed" && slot.bookingStatus !== "Approved")  continue;
+          if (status === "Cancelled" && slot.bookingStatus !== "Rejected")  continue;
+          if (status === "Pending"   && slot.bookingStatus !== "pending")   continue;
+        }
+
+        allBookings.push({
+          _id:      `${svc._id}_${slot._id}`,
+          slotId:   slot._id,
+          serviceId: {
+            _id:       svc._id,
+            name:      svc.name,
+            category:  svc.category,
+            price:     svc.price,
+            duration:  svc.duration,
+            description: svc.description,
+            createdBy: svc.createdBy,
+          },
+          userId:   slot.bookedBy,   // ObjectId — will populate below
+          date:     slot.date,
+          slotTime: slot.time,
+          status:   displayStatus,
+          bookingStatus:         slot.bookingStatus,
+          ServiceDeliveryStatus: slot.ServiceDeliveryStatus,
+          createdAt: bookedAt,
+        });
+      }
     }
 
-    if (req.query.dateFrom || req.query.dateTo) {
-      query.createdAt = {};
-      if (req.query.dateFrom) {
-        query.createdAt.$gte = new Date(req.query.dateFrom);
-      }
-      if (req.query.dateTo) {
-        query.createdAt.$lte = new Date(req.query.dateTo);
-      }
-    }
+    // Sort newest first
+    allBookings.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
 
-    const [bookings, total] = await Promise.all([
-      Booking.find(query)
-        .populate("userId", "username email contact")
-        .populate({
-          path: "serviceId",
-          select: "name category createdBy",
-          populate: { path: "createdBy", select: "username" },
-        })
-        .skip(skip)
-        .limit(limit)
-        .lean(),
-      Booking.countDocuments(query),
-    ]);
+    const total = allBookings.length;
+    const pages = Math.ceil(total / limit) || 1;
+    const paged = allBookings.slice(skip, skip + limit);
 
-    const pages = Math.ceil(total / limit);
+    // Populate user details for the page
+    const userIds = [...new Set(paged.map(b => b.userId?.toString()).filter(Boolean))];
+    const users   = await User.find({ _id: { $in: userIds } }, "firstname lastname username email contact").lean();
+    const userMap = {};
+    users.forEach(u => { userMap[u._id.toString()] = u; });
 
-    return res.status(200).json({
-      success: true,
-      data: bookings,
-      total,
-      page,
-      pages,
-    });
+    const populated = paged.map(b => ({
+      ...b,
+      userId: b.userId ? (userMap[b.userId.toString()] || { _id: b.userId }) : null,
+    }));
+
+    return res.status(200).json({ success: true, data: populated, total, page, pages });
   } catch (err) {
     console.error("getAllBookings error:", err);
     return res.status(500).json({ success: false, message: "Server Error", error: err.message });
@@ -381,24 +425,53 @@ const getAllBookings = async (req, res) => {
 };
 
 /**
- * GET /api/admin/bookings/:id
- * Single booking detail with full user and service info.
+ * GET /api/admin/bookings/:id  — format: serviceId_slotId
  */
 const getBookingDetail = async (req, res) => {
   try {
     const { id } = req.params;
+    const [serviceId, slotId] = id.split("_");
 
-    const booking = await Booking.findById(id)
-      .populate("userId")
-      .populate("serviceId");
+    const svc = await Service.findById(serviceId)
+      .populate("createdBy", "firstname lastname username email contact city state")
+      .lean();
 
-    if (!booking) {
-      return res.status(404).json({ success: false, message: "Booking not found" });
+    if (!svc) return res.status(404).json({ success: false, message: "Service not found" });
+
+    const slot = svc.availableSlots.find(s => s._id.toString() === slotId);
+    if (!slot) return res.status(404).json({ success: false, message: "Slot not found" });
+
+    // Populate user — works for both booked and rejected slots (bookedBy is now preserved)
+    let userDoc = null;
+    if (slot.bookedBy) {
+      userDoc = await User.findById(slot.bookedBy, "firstname lastname username email contact city state").lean();
     }
+
+    const displayStatus =
+      slot.bookingStatus === "Approved" ? "Confirmed" :
+      slot.bookingStatus === "Rejected" ? "Cancelled" : "Pending";
 
     return res.status(200).json({
       success: true,
-      data: booking,
+      data: {
+        _id:      `${serviceId}_${slotId}`,
+        status:   displayStatus,
+        bookingStatus: slot.bookingStatus,
+        ServiceDeliveryStatus: slot.ServiceDeliveryStatus,
+        date:     slot.date,
+        slotTime: slot.time,
+        createdAt: slot.bookedAt,
+        userId:   userDoc,
+        serviceId: {
+          _id:       svc._id,
+          name:      svc.name,
+          category:  svc.category,
+          price:     svc.price,
+          duration:  svc.duration,
+          description: svc.description,
+          createdBy: svc.createdBy,
+        },
+      },
     });
   } catch (err) {
     console.error("getBookingDetail error:", err);
@@ -410,12 +483,11 @@ const getBookingDetail = async (req, res) => {
 
 /**
  * GET /api/admin/analytics
- * Returns aggregated analytics data.
- * Query params: dateFrom, dateTo — optional ISO date strings to filter all metrics
+ * Uses real data: Service.availableSlots for bookings, History for completions,
+ * PaymentStatus for revenue.
  */
 const getAnalytics = async (req, res) => {
   try {
-    // Build optional date filter
     const dateFilter = {};
     if (req.query.dateFrom || req.query.dateTo) {
       dateFilter.createdAt = {};
@@ -425,97 +497,161 @@ const getAnalytics = async (req, res) => {
 
     const yearStart = new Date(new Date().getFullYear(), 0, 1);
 
-    // Helper: build monthly trend for any model (12 months, current year)
-    const monthlyTrend = async (Model, matchExtra = {}) => {
-      const raw = await Model.aggregate([
-        { $match: { createdAt: { $gte: yearStart }, ...matchExtra } },
-        { $group: { _id: { month: { $month: "$createdAt" } }, count: { $sum: 1 } } },
-        { $sort: { "_id.month": 1 } },
-      ]);
-      const arr = Array(12).fill(0);
-      raw.forEach((e) => { arr[e._id.month - 1] = e.count; });
-      return arr;
-    };
-
-    // 1. Total revenue
+    // ── 1. Revenue from PaymentStatus ─────────────────────────────────────
     const revenueResult = await Payment.aggregate([
       { $match: { status: "success", ...dateFilter } },
       { $group: { _id: null, total: { $sum: "$amount" } } },
     ]);
-    const totalRevenue = revenueResult.length > 0 ? revenueResult[0].total : 0;
+    const totalRevenue = revenueResult[0]?.total || 0;
 
-    // 2. Monthly revenue (current year, 12-element array)
     const monthlyRevenueRaw = await Payment.aggregate([
       { $match: { status: "success", createdAt: { $gte: yearStart } } },
-      { $group: { _id: { month: { $month: "$createdAt" } }, total: { $sum: "$amount" } } },
-      { $sort: { "_id.month": 1 } },
+      { $group: { _id: { $month: "$createdAt" }, total: { $sum: "$amount" } } },
+      { $sort: { _id: 1 } },
     ]);
     const monthlyRevenue = Array(12).fill(0);
-    monthlyRevenueRaw.forEach((e) => { monthlyRevenue[e._id.month - 1] = e.total; });
+    monthlyRevenueRaw.forEach(e => { monthlyRevenue[e._id - 1] = e.total; });
 
-    // 3. Top 5 services by booking count
-    const topServicesRaw = await Booking.aggregate([
-      { $match: { status: "Confirmed", ...dateFilter } },
-      { $group: { _id: "$serviceId", count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 5 },
-      { $lookup: { from: "services", localField: "_id", foreignField: "_id", as: "service" } },
-      { $unwind: { path: "$service", preserveNullAndEmptyArrays: true } },
-      { $project: { name: { $ifNull: ["$service.name", "Unknown Service"] }, count: 1 } },
-    ]);
+    // ── 2. Booking counts from Service.availableSlots ─────────────────────
+    const allServices = await Service.find({}, "name category createdBy availableSlots createdAt").lean();
 
-    // 4. Top 5 vendors by confirmed booking count
-    const topVendorsRaw = await Booking.aggregate([
-      { $match: { status: "Confirmed", ...dateFilter } },
-      { $lookup: { from: "services", localField: "serviceId", foreignField: "_id", as: "service" } },
-      { $unwind: { path: "$service", preserveNullAndEmptyArrays: true } },
-      { $group: { _id: "$service.createdBy", bookingCount: { $sum: 1 } } },
-      { $sort: { bookingCount: -1 } },
-      { $limit: 5 },
-      { $lookup: { from: "users", localField: "_id", foreignField: "_id", as: "vendor" } },
-      { $unwind: { path: "$vendor", preserveNullAndEmptyArrays: true } },
-      { $project: { name: { $ifNull: ["$vendor.username", "Unknown Vendor"] }, count: "$bookingCount" } },
-    ]);
+    let totalBookings = 0;
+    const serviceBookingCount = {};  // serviceId → count
+    const vendorBookingCount  = {};  // vendorId  → count
+    const monthlyBookings     = Array(12).fill(0);
+    const slotStatusCount     = { pending: 0, Approved: 0, Rejected: 0 };
 
-    // 5. Summary counts
-    const [totalUsers, totalVendors, totalBookings, totalPayments] = await Promise.all([
-      User.countDocuments({ ...dateFilter }),
+    for (const svc of allServices) {
+      for (const slot of svc.availableSlots) {
+        if (!slot.isBooked) continue;
+
+        // Use createdAt of the service as fallback if bookedAt is unreliable
+        // bookedAt default was Date.now() evaluated once — use slot._id timestamp as reliable fallback
+        let bookedDate = null;
+        if (slot.bookedAt && slot.bookedAt instanceof Date) {
+          bookedDate = slot.bookedAt;
+        } else {
+          // Extract timestamp from ObjectId as reliable creation time
+          try {
+            bookedDate = slot._id.getTimestamp();
+          } catch {
+            bookedDate = new Date(svc.createdAt);
+          }
+        }
+
+        // Date filter
+        if (dateFilter.createdAt) {
+          if (dateFilter.createdAt.$gte && bookedDate < dateFilter.createdAt.$gte) continue;
+          if (dateFilter.createdAt.$lte && bookedDate > dateFilter.createdAt.$lte) continue;
+        }
+
+        totalBookings++;
+
+        // Monthly trend (current year) — use ObjectId timestamp for accuracy
+        if (bookedDate && bookedDate >= yearStart) {
+          monthlyBookings[bookedDate.getMonth()]++;
+        }
+
+        // Per-service count
+        const sid = svc._id.toString();
+        serviceBookingCount[sid] = (serviceBookingCount[sid] || 0) + 1;
+        if (!serviceBookingCount[`name_${sid}`]) serviceBookingCount[`name_${sid}`] = svc.name;
+
+        // Per-vendor count
+        if (svc.createdBy) {
+          const vid = svc.createdBy.toString();
+          vendorBookingCount[vid] = (vendorBookingCount[vid] || 0) + 1;
+        }
+
+        // Slot status distribution
+        const st = slot.bookingStatus || "pending";
+        slotStatusCount[st] = (slotStatusCount[st] || 0) + 1;
+      }
+    }
+
+    // Top 5 services
+    const topServices = Object.entries(serviceBookingCount)
+      .filter(([k]) => !k.startsWith("name_"))
+      .map(([id, count]) => ({ _id: id, name: serviceBookingCount[`name_${id}`] || "Unknown", count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    // Top 5 vendors — need names
+    const topVendorIds = Object.entries(vendorBookingCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([id]) => id);
+
+    const vendorDocs = await User.find(
+      { _id: { $in: topVendorIds } },
+      "firstname lastname username"
+    ).lean();
+    const vendorNameMap = {};
+    vendorDocs.forEach(v => {
+      vendorNameMap[v._id.toString()] =
+        v.firstname ? `${v.firstname} ${v.lastname || ""}`.trim() : (v.username || "Unknown");
+    });
+
+    const topVendors = topVendorIds.map(id => ({
+      _id: id,
+      name: vendorNameMap[id] || "Unknown",
+      count: vendorBookingCount[id],
+    }));
+
+    // Booking status distribution
+    const bookingStatusDist = Object.entries(slotStatusCount)
+      .filter(([, c]) => c > 0)
+      .map(([status, count]) => ({
+        status: status === "Approved" ? "Confirmed" : status === "Rejected" ? "Cancelled" : "Pending",
+        count,
+      }));
+
+    // ── 3. Summary counts ─────────────────────────────────────────────────
+    const [totalUsers, totalVendors, totalPayments] = await Promise.all([
+      User.countDocuments({ role: "user", ...dateFilter }),
       User.countDocuments({ role: "service", ...dateFilter }),
-      Booking.countDocuments({ ...dateFilter }),
       Payment.countDocuments({ status: "success", ...dateFilter }),
     ]);
 
-    // 6. Monthly trends (current year) for users, vendors, bookings, payments
-    const [usersTrend, vendorsTrend, bookingsTrend, paymentsTrend] = await Promise.all([
-      monthlyTrend(User, {}),
+    // ── 4. Monthly trends ─────────────────────────────────────────────────
+    const monthlyTrend = async (Model, matchExtra = {}) => {
+      const raw = await Model.aggregate([
+        { $match: { createdAt: { $gte: yearStart }, ...matchExtra } },
+        { $group: { _id: { $month: "$createdAt" }, count: { $sum: 1 } } },
+        { $sort: { _id: 1 } },
+      ]);
+      const arr = Array(12).fill(0);
+      raw.forEach(e => { arr[e._id - 1] = e.count; });
+      return arr;
+    };
+
+    const [usersTrend, vendorsTrend, paymentsTrend] = await Promise.all([
+      monthlyTrend(User, { role: "user" }),
       monthlyTrend(User, { role: "service" }),
-      monthlyTrend(Booking, {}),
       monthlyTrend(Payment, { status: "success" }),
     ]);
 
-    // 7. Booking status distribution (pie chart)
-    const bookingStatusRaw = await Booking.aggregate([
-      { $match: { ...dateFilter } },
-      { $group: { _id: "$status", count: { $sum: 1 } } },
-    ]);
-    const bookingStatusDist = bookingStatusRaw.map((e) => ({ status: e._id || "Unknown", count: e.count }));
-
-    // 8. Payment status distribution (pie chart)
+    // ── 5. Payment status distribution ────────────────────────────────────
     const paymentStatusRaw = await Payment.aggregate([
       { $match: { ...dateFilter } },
       { $group: { _id: "$status", count: { $sum: 1 } } },
     ]);
-    const paymentStatusDist = paymentStatusRaw.map((e) => ({ status: e._id || "Unknown", count: e.count }));
+    const paymentStatusDist = paymentStatusRaw.map(e => ({ status: e._id || "Unknown", count: e.count }));
 
     return res.status(200).json({
       success: true,
       data: {
         totalRevenue,
         monthlyRevenue,
-        topServices: topServicesRaw,
-        topVendors: topVendorsRaw,
+        topServices,
+        topVendors,
         summary: { totalUsers, totalVendors, totalBookings, totalPayments },
-        trends: { users: usersTrend, vendors: vendorsTrend, bookings: bookingsTrend, payments: paymentsTrend },
+        trends: {
+          users:    usersTrend,
+          vendors:  vendorsTrend,
+          bookings: monthlyBookings,
+          payments: paymentsTrend,
+        },
         bookingStatusDist,
         paymentStatusDist,
       },

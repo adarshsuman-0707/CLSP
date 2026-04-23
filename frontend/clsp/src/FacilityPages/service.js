@@ -172,7 +172,7 @@ const ServiceList = () => {
     setLoading(true);
     try {
       const data = await serviceall(token);
-      setServices(data?.services || data || []);
+      setServices(Array.isArray(data) ? data : (data?.data || data?.services || []));
     } catch {
       toast.error('Failed to fetch services.');
     } finally {

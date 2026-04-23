@@ -84,7 +84,7 @@ const BookingRequestRow = ({ req, serviceId, token, onStatusChange, onDelivery, 
         </td>
         <td className="small">
           {req.bookedBy
-            ? `${req.bookedBy.firstname} ${req.bookedBy.lastname}`
+            ? `${req.bookedBy.firstname || ''} ${req.bookedBy.lastname || ''}`.trim() || req.bookedBy.email || 'User'
             : <span className="text-muted">—</span>}
         </td>
         <td>
@@ -167,8 +167,8 @@ const BookingRequestRow = ({ req, serviceId, token, onStatusChange, onDelivery, 
                 <div className="fw-semibold text-muted mb-1">Customer Details</div>
                 {req.bookedBy ? (
                   <>
-                    <div><strong>Name:</strong> {req.bookedBy.firstname} {req.bookedBy.lastname}</div>
-                    <div><strong>Email:</strong> {req.bookedBy.email}</div>
+                    <div><strong>Name:</strong> {req.bookedBy.firstname || ''} {req.bookedBy.lastname || ''}</div>
+                    <div><strong>Email:</strong> {req.bookedBy.email || '—'}</div>
                     <div><strong>Phone:</strong> {req.bookedBy.phone || req.bookedBy.contact || '—'}</div>
                     <div><strong>Address:</strong> {req.bookedBy.address || '—'}</div>
                     <div><strong>Pincode:</strong> {req.bookedBy.pincode || '—'}</div>
@@ -220,8 +220,12 @@ const SlotRow = ({ slot, serviceId, onDelete }) => (
       <StatusBadge status={slot.bookingStatus} />
     </td>
     <td className="small">
-      {slot.isBooked && slot.bookedBy
-        ? `${slot.bookedBy.firstname} ${slot.bookedBy.lastname}`
+      {slot.isBooked
+        ? (slot.bookedBy
+            ? (typeof slot.bookedBy === 'object'
+                ? `${slot.bookedBy.firstname || ''} ${slot.bookedBy.lastname || ''}`.trim() || slot.bookedBy.email || 'Booked'
+                : 'Booked')
+            : 'Booked')
         : <span className="text-muted">—</span>}
     </td>
     <td className="text-end">
