@@ -66,6 +66,14 @@ const userSchema = mongoose.Schema({
         type: Boolean,
         default: false  // Phone verification ke liye
     },
+    isBlocked: {
+        type: Boolean,
+        default: false  // Admin can block/unblock users
+    },
+    isVerified: {
+        type: Boolean,
+        default: false  // Admin can verify vendors (role=service)
+    },
     address:{
         type:String
         , default :"NA"

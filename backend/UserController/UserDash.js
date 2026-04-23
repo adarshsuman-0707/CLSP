@@ -1,8 +1,10 @@
 const Service = require('../models/Service');
-const User = require('../models/User')
-const SavedService=require('../models/SaveService')
-const HistoryServiceDoneStatus = require("../models/History"); // adj
-const Review = require('../models/reviewSchema');``
+const User = require('../models/User');
+const SavedService = require('../models/SaveService');
+const HistoryServiceDoneStatus = require("../models/History");
+const Review = require('../models/reviewSchema');
+const ImageModel = require('../models/image');
+const bcrypt = require('bcrypt');
 const userProfile = async (req, res) => {
     try {
         const tokenEmail = req.user.email;
@@ -15,16 +17,19 @@ const userProfile = async (req, res) => {
             email: user.email,
             contact: user.contact,
             address: user.address,
-            Id:user._id,
-            state:user.state,
-            city:user.city,
-            country:user.country,
-            pincode:user.pincode,
-            firstname:user.firstname,
-            lastname:user.lastname,
-            gender:user.gender,
-            role:user.role
-
+            Id: user._id,
+            state: user.state,
+            city: user.city,
+            country: user.country,
+            pincode: user.pincode,
+            firstname: user.firstname,
+            lastname: user.lastname,
+            gender: user.gender,
+            role: user.role,
+            profileImageId: user.profileImage || null,
+            profileImageUrl: user.profileImage
+                ? `/uploads/${(await ImageModel.findById(user.profileImage))?.filename || ''}`
+                : null,
         });
     } catch (error) {
         console.log("Error arise in fetching profile user");
@@ -33,7 +38,7 @@ const userProfile = async (req, res) => {
 };
 
 const userDataUpdate=async(req,res)=>{
-    console.log(req.body);
+    // console.log(req.body);
   
   try{  
     const {Id,firstname,lastname,city,country,state,address,pincode}=req.body
@@ -62,7 +67,7 @@ const userDataUpdate=async(req,res)=>{
 const userDeleteProfile=async(req,res)=>{
 try {
     const {id}=req.params
-    console.log(req.params)
+    // console.log(req.params)
     if(!id){
         return res.status(400).json({ message: "User ID is required" });
     }
@@ -96,7 +101,7 @@ const UserSavedService = async (req, res) => {
 
     // Check if already saved
     const alreadySaved = await SavedService.findOne({savedService: serviceId });
-    console.log(alreadySaved, "already saved wala data");
+    // console.log(alreadySaved, "already saved wala data");
     if (alreadySaved) {
       return res.status(200).json({ message: "Service already saved", savedService: alreadySaved });
     }
@@ -187,7 +192,7 @@ const addReview = async (req, res) => {
   try {
     const { serviceId, rating, title, comment, reviewCardId } = req.body;
     const userId = req.user._id; // customer (from token)
-    console.log(req.body, "review wala data");
+    // console.log(req.body, "review wala data");
 
     // 1. Service fetch karo
     const service = await Service.findById(serviceId);
@@ -217,10 +222,10 @@ const addReview = async (req, res) => {
       { new: true, upsert: true, setDefaultsOnInsert: true }
     );
 
-    console.log(review, "review added/updated");
+    // console.log(review, "review added/updated");
     res.status(201).json({ message: "Review submitted successfully", review });
   } catch (err) {
-    console.error(err);
+    // console.error(err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -231,7 +236,7 @@ const getCompletedDeliveries = async (req, res) => {
     res.status(200).json({ completedServices });
   } catch (error) {
 
-    console.error("Get Completed Deliveries Error:", error);
+    // console.error("Get Completed Deliveries Error:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
@@ -240,9 +245,9 @@ const getCompletedDeliveries = async (req, res) => {
 const getReviewDetails = async (req, res)=>{
   try{
     const userId=req.user._id
-    console.log("User ID for reviews:", userId);
+    // console.log("User ID for reviews:", userId);
    const reviews=await Review.find({reviewer:userId});
-    console.log("Fetched reviews:", reviews);
+    // console.log("Fetched reviews:", reviews);
     res.status(200).json({reviews});
   }
   catch(error){
@@ -250,6 +255,74 @@ const getReviewDetails = async (req, res)=>{
   }
 }
 
-module.exports = { userProfile,userDataUpdate,userDeleteProfile,UserSavedService,getUserSavedServices,removeSavedService,addReview,getCompletedDeliveries,getReviewDetails };
+/**
+ * POST /api/user/uploadProfilePic
+ * Accepts multipart/form-data with field "image".
+ * Saves image doc, links it to the user, returns the image URL.
+ */
+const uploadProfilePicture = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: "No file uploaded." });
+        }
 
-// module.exports={userProfile}
+        const userId = req.user._id;
+        const { filename } = req.file;
+
+        // Save image record
+        const image = new ImageModel({
+            filename,
+            path: `uploads/${filename}`,
+            ProfileUser: userId,
+        });
+        await image.save();
+
+        // Link image to user
+        await User.findByIdAndUpdate(userId, { profileImage: image._id });
+
+        return res.status(200).json({
+            message: "Profile picture updated successfully.",
+            profileImageUrl: `/uploads/${filename}`,
+            profileImageId: image._id,
+        });
+    } catch (error) {
+        console.error("uploadProfilePicture error:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+};
+
+/**
+ * POST /api/user/changePassword
+ * Body: { currentPassword, newPassword }
+ */
+const changePassword = async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ message: "Both currentPassword and newPassword are required." });
+        }
+        if (newPassword.length < 6) {
+            return res.status(400).json({ message: "New password must be at least 6 characters." });
+        }
+
+        const user = await User.findById(req.user._id);
+        if (!user) return res.status(404).json({ message: "User not found." });
+
+        const isMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ message: "Current password is incorrect." });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        user.password = await bcrypt.hash(newPassword, salt);
+        await user.save();
+
+        return res.status(200).json({ message: "Password changed successfully." });
+    } catch (error) {
+        console.error("changePassword error:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+};
+
+module.exports = { userProfile, userDataUpdate, userDeleteProfile, UserSavedService, getUserSavedServices, removeSavedService, addReview, getCompletedDeliveries, getReviewDetails, uploadProfilePicture, changePassword };

@@ -13,12 +13,21 @@ const UserRoutes=require('./routers/UserRoute.js')
 const serviceRoutes=require('./routers/ServiceRoute.js')
 const NotificationRoutes=require('./routers/NotificationRoutes.js')
 const Payment=require('./routers/PaymentRoute.js')
+const VendorRoutes=require('./routers/VendorRoute.js')
+const PackageRoutes=require('./routers/PackageRoute.js')
+const InvoiceRoutes=require('./routers/InvoiceRoute.js')
+const AdminRoutes=require('./routers/AdminRoute.js')
 const app=express();
 // middleware heres
 app.use(express.json())
 app.use(express.urlencoded({extended:false}));
-app.use(express.static('uploads'))
-app.use(cors());
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+// app.use(express.static('uploads'))
+app.use(cors({
+  origin: 'http://localhost:3001',
+  methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH'],
+  credentials: true
+}));
 app.use(helmet())
 
 //here setup for server side
@@ -31,7 +40,11 @@ app.set('view engine',"ejs")
  app.use('/api/user',UserRoutes);
  app.use('/api/service',serviceRoutes);
  app.use('/api/Notification',NotificationRoutes);
- app.use('/api/payment',Payment)
+ app.use('/api/payment',Payment);
+ app.use('/api/vendors',VendorRoutes);
+ app.use('/api/packages',PackageRoutes);
+ app.use('/api/invoice',InvoiceRoutes);
+ app.use('/api/admin',AdminRoutes);
 
  const storage = multer.diskStorage({
    destination: function (req, file, cb) {

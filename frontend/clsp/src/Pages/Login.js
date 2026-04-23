@@ -17,32 +17,33 @@ const navigate=useNavigate()
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await LoginUser({
-        email,
-        password,
-      });
-      
-      console.log(response);
+      const response = await LoginUser({ email, password });
 
       if (response.message === "Login Succesfully") {
-        localStorage.setItem("isLogin",true)
-        localStorage.setItem("token",response.token)
-        localStorage.setItem("serviceID",response.userData._id)
-         localStorage.setItem("role",response.userData.role)
-         
-        navigate('/')
-
+        localStorage.setItem("isLogin", true);
+        localStorage.setItem("token", response.token);
+        localStorage.setItem("serviceID", response.userData._id);
+        localStorage.setItem("role", response.userData.role);
+        navigate("/");
         toast.success("✅ Login Successful!", { autoClose: 2000 });
-
       } else {
         toast.error("❌ Invalid Credentials. Try Again!", { autoClose: 2000 });
       }
     } catch (error) {
-      toast.error("❌ Login Failed! Please check your details.", { autoClose: 2000 });
-    }
-    finally{
-    setLoading(false);
+      const code = error?.code;
+      const msg  = error?.message;
 
+      if (code === "ACCOUNT_BLOCKED") {
+        toast.error("🚫 Your account has been suspended by the admin. Contact support.", { autoClose: 5000 });
+      } else if (code === "PENDING_APPROVAL") {
+        toast.warn("⏳ Your vendor account is pending admin approval. Please wait.", { autoClose: 5000 });
+      } else if (msg) {
+        toast.error(`❌ ${msg}`, { autoClose: 3000 });
+      } else {
+        toast.error("❌ Login Failed! Please check your details.", { autoClose: 2000 });
+      }
+    } finally {
+      setLoading(false);
     }
   };
 

@@ -7,9 +7,30 @@ const User = require("../models/User.js");
 const review = require("../models/reviewSchema.js");
 const cron = require("node-cron");
 const reviewSchema = require("../models/reviewSchema.js");
+const { emitBookingEvent } = require('../utils/sseEmitter.js');
 const addService = async (req, res) => {
   try {
     const { creatorId } = req.params;
+
+    // ✅ Check if vendor is verified and not blocked
+    const vendor = await User.findById(creatorId);
+    if (!vendor) {
+      return res.status(404).json({ message: "Vendor not found" });
+    }
+
+    if (!vendor.isVerified) {
+      return res.status(403).json({ 
+        success: false,
+        message: "Your account is not verified yet. Please wait for admin approval before creating services." 
+      });
+    }
+
+    if (vendor.isBlocked) {
+      return res.status(403).json({ 
+        success: false,
+        message: "Your account has been suspended. Please contact admin for more information." 
+      });
+    }
 
     const {
       name,
@@ -27,17 +48,19 @@ const addService = async (req, res) => {
       duration,
       category,
       availableSlots, // Array of { date, time }
-      createdBy: creatorId, // Using param now
+      createdBy: creatorId,
+      approvalStatus: "pending", // ✅ Default to pending, admin will approve
     });
 
     const savedService = await newService.save();
 
     res.status(201).json({
-      message: "Service created successfully",
+      success: true,
+      message: "Service created successfully. Waiting for admin approval.",
       service: savedService,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 };
 const deleteSlotFromService = async (req, res) => {
@@ -93,91 +116,114 @@ const updateSlotBookingStatus = async (req, res) => {
 };
 const Allservices = async (req, res) => {
   try {
-    const data = await Service.find().populate('createdBy', 'firstname lastname email phone address pincode contact');
-    console.log(data, "find the services")
+    const userRole = req.user?.role; // Get logged-in user's role
+    let query = {};
+    let populateMatch = {};
 
-    if (!data) {
-      return res.status(404).json({ message: "Service  not found" });
+    // ✅ Role-based filtering
+    if (userRole === "user") {
+      // Users see only APPROVED services from VERIFIED, NON-BLOCKED vendors
+      query.approvalStatus = "approved";
+      populateMatch = { isVerified: true, isBlocked: false };
+    } else if (userRole === "service") {
+      // Vendors see only their own services (all statuses)
+      query.createdBy = req.user._id;
     }
+    // Admin sees all services (no filter)
+
+    const data = await Service.find(query)
+      .populate({
+        path: 'createdBy',
+        select: 'firstname lastname email phone address pincode contact isVerified isBlocked',
+        match: Object.keys(populateMatch).length > 0 ? populateMatch : undefined
+      })
+      .sort({ createdAt: -1 });
+
+    // ✅ Filter out services where vendor didn't match (for users)
+    const filteredData = data.filter(service => service.createdBy !== null);
+
+    console.log(`Fetched ${filteredData.length} services for role: ${userRole}`);
 
     res.status(200).json({
-      message: "Slot booking status updated successfully",
-      data,
+      success: true,
+      message: "Services fetched successfully",
+      data: filteredData,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ success: false, error: err.message });
   }
 }
 const bookServiceSlot = async (req, res) => {
   try {
     const { serviceId, slotId } = req.params;
-    const userId = req.user.id; // token se nikla
+    const userId = req.user._id; // ✅ fixed: was req.user.id
     console.log("Booking/Cancel request:", { serviceId, slotId, userId });
 
-    // Service fetch
     const service = await Service.findById(serviceId);
     if (!service) return res.status(404).json({ message: "Service not found" });
 
-    // Slot find
     const slot = service.availableSlots.id(slotId);
     if (!slot) return res.status(404).json({ message: "Slot not found" });
 
-    // ✅ If already booked by this user → cancel booking (only if pending)
-    if (slot.isBooked && slot.bookedBy?.toString() === userId) {
+    // ── Cancel: only if booked by this user AND still pending ────────────────
+    if (slot.isBooked && slot.bookedBy?.toString() === userId.toString()) {
       if (slot.bookingStatus === "Approved") {
-        return res
-          .status(400)
-          .json({ message: "Cannot cancel, slot already confirmed" });
+        return res.status(400).json({
+          message: "Cannot cancel — booking already accepted by serviceman.",
+        });
       }
 
+      // Reset slot to available
       slot.isBooked = false;
       slot.bookedBy = null;
-      slot.bookingStatus = "Rejected"; // canceled booking
+      slot.bookingStatus = "pending"; // reset to default (unbooked pending)
       slot.bookedAt = null;
 
       await service.save();
 
+      // 🔔 Notify all connected clients (serviceman's page will auto-refresh)
+      emitBookingEvent('booking:cancelled', {
+        serviceId,
+        slotId,
+        slot: { date: slot.date, time: slot.time },
+      });
+
       return res.json({
         message: "Booking cancelled successfully!",
-        booking: {
-          serviceName: service.name,
-          slot: {
-            date: slot.date,
-            time: slot.time,
-            status: slot.bookingStatus,
-          },
-          userId,
-        },
+        cancelled: true,
+        slot: { date: slot.date, time: slot.time },
       });
     }
 
-    // ❌ If booked by another user → prevent cancellation
-    if (slot.isBooked && slot.bookedBy?.toString() !== userId) {
-      return res
-        .status(400)
-        .json({ message: "Slot already booked by another user" });
+    // ── Block: slot booked by someone else ────────────────────────────────────
+    if (slot.isBooked && slot.bookedBy?.toString() !== userId.toString()) {
+      return res.status(400).json({ message: "Slot already booked by another user." });
     }
 
-    // ✅ If not booked → book it (set to pending)
+    // ── Book: slot is free ────────────────────────────────────────────────────
     slot.isBooked = true;
     slot.bookedBy = userId;
-    slot.bookingStatus = "pending"; // pending confirmation
-    slot.bookedAt = new Date(); // store proper Date object
+    slot.bookingStatus = "pending";
+    slot.bookedAt = new Date();
 
     await service.save();
 
-    // User details fetch
     const user = await User.findById(userId).select("-password");
 
-    res.json({
-      message: "Service booked successfully (pending, will confirm in 2 min)!",
+    // 🔔 Notify all connected clients (serviceman's page will auto-refresh)
+    emitBookingEvent('booking:new', {
+      serviceId,
+      slotId,
+      serviceName: service.name,
+      slot: { date: slot.date, time: slot.time },
+    });
+
+    return res.json({
+      message: "Service booked successfully!",
+      booked: true,
       booking: {
         serviceName: service.name,
-        slot: {
-          date: slot.date,
-          time: slot.time,
-          status: slot.bookingStatus,
-        },
+        slot: { date: slot.date, time: slot.time, status: slot.bookingStatus },
         user,
       },
     });
@@ -187,75 +233,93 @@ const bookServiceSlot = async (req, res) => {
   }
 };
 
-// CRON JOB (runs every 1 minute, auto-confirm after exactly 2 min)
-cron.schedule("* * * * *", async () => {
-  try {
-    const now = new Date();
-    console.log("⏰ Cron running at:", now.toLocaleString());
+// // CRON JOB (runs every 1 minute, auto-confirm after exactly 2 min)
+// cron.schedule("* * * * *", async () => {
+//   try {
+//     const now = new Date();
+//     console.log("⏰ Cron running at:", now.toLocaleString());
 
-    // Fetch all services that have pending slots
-    const services = await Service.find({ "availableSlots.bookingStatus": "pending" });
+//     // Fetch all services that have pending slots
+//     const services = await Service.find({ "availableSlots.bookingStatus": "pending" });
 
-    for (const service of services) {
-      let updated = false;
+//     for (const service of services) {
+//       let updated = false;
 
-      service.availableSlots.forEach((slot) => {
-        if (slot.bookingStatus === "pending" && slot.bookedAt) {
-          const bookedTime = new Date(slot.bookedAt);
-          const diffMs = now.getTime() - bookedTime.getTime();
+//       service.availableSlots.forEach((slot) => {
+//         if (slot.bookingStatus === "pending" && slot.bookedAt) {
+//           const bookedTime = new Date(slot.bookedAt);
+//           const diffMs = now.getTime() - bookedTime.getTime();
 
-          console.log(
-            `Slot ${slot._id}: bookedAt=${bookedTime.toLocaleTimeString()}, now=${now.toLocaleTimeString()}, diffMs=${diffMs}`
-          );
+//           console.log(
+//             `Slot ${slot._id}: bookedAt=${bookedTime.toLocaleTimeString()}, now=${now.toLocaleTimeString()}, diffMs=${diffMs}`
+//           );
 
-          // Only approve if 2 min (120000 ms) or more have passed
-          if (diffMs >= 2 * 60 * 1000) {
-            slot.bookingStatus = "Approved"; // auto-confirm
-            updated = true;
-            console.log(`✅ Slot ${slot._id} auto-confirmed at ${now.toLocaleTimeString()}`);
-          }
-        }
-      });
+//           // Only approve if 2 min (120000 ms) or more have passed
+//           if (diffMs >= 2 * 60 * 1000) {
+//             slot.bookingStatus = "Approved"; // auto-confirm
+//             updated = true;
+//             console.log(`✅ Slot ${slot._id} auto-confirmed at ${now.toLocaleTimeString()}`);
+//           }
+//         }
+//       });
 
-      if (updated) {
-        await service.save();
-      }
-    }
-  } catch (err) {
-    console.error("❌ Cron job error:", err);
-  }
-});
+//       if (updated) {
+//         await service.save();
+//       }
+//     }
+//   } catch (err) {
+//     console.error("❌ Cron job error:", err);
+//   }
+// });
 
-// Service man ke liye slot requests dekhne ki API
 const getBookingRequests = async (req, res) => {
   try {
     const { serviceId } = req.params;
+    const vendorId = req.user._id;
+
+    // ✅ Check if vendor is blocked
+    const vendor = await User.findById(vendorId);
+    if (vendor.isBlocked) {
+      return res.status(403).json({ 
+        success: false,
+        message: "Your account has been suspended. You cannot access booking requests." 
+      });
+    }
 
     // Service ko fetch karna + populate user details
     const service = await Service.findById(serviceId)
       .populate("availableSlots.bookedBy", "firstname lastname email phone address pincode");
-    // ✅ yaha pe sirf ye fields ayengi
 
     if (!service) {
-      return res.status(404).json({ message: "Service not found" });
+      return res.status(404).json({ success: false, message: "Service not found" });
+    }
+
+    // ✅ Verify that this service belongs to the logged-in vendor
+    if (service.createdBy.toString() !== vendorId.toString()) {
+      return res.status(403).json({ 
+        success: false,
+        message: "You are not authorized to view these booking requests." 
+      });
     }
 
     // Filter: Sirf booked slots
     const requests = service.availableSlots.filter(slot => slot.isBooked);
 
     res.status(200).json({
+      success: true,
       message: "Booking requests fetched successfully",
       service: {
         _id: service._id,
         name: service.name,
         category: service.category,
+        approvalStatus: service.approvalStatus,
       },
       requests: requests
     });
 
   } catch (err) {
     console.error("Error fetching booking requests:", err);
-    res.status(500).json({ message: "Something went wrong" });
+    res.status(500).json({ success: false, message: "Something went wrong" });
   }
 };
 
@@ -263,59 +327,62 @@ const updateSlotStatus = async (req, res) => {
   try {
     const { serviceId, slotId } = req.params;
     const { status } = req.body;
-    const userId = req.user._id; // 👈 login se aayega
+    const userId = req.user._id;
 
-    // 1. validate status
     if (!['Approved', 'Rejected'].includes(status)) {
       return res.status(400).json({ message: "Status must be Approved or Rejected" });
     }
 
-    // 2. service fetch karo
-    const service = await Service.findById(serviceId).populate("availableSlots.bookedBy", "name email");
+    const service = await Service.findById(serviceId)
+      .populate("availableSlots.bookedBy", "firstname lastname email");
 
-    console.log(service,"sdhbfkshsdfgsdfsadfs")
-    if (!service) {
-      return res.status(404).json({ message: "Service not found" });
+    if (!service) return res.status(404).json({ message: "Service not found" });
+
+    // Only the service creator can accept/reject
+    if (service.createdBy.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Only the service provider can update booking status." });
     }
 
-    // 3. slot find karo
     const slot = service.availableSlots.id(slotId);
-    if (!slot) {
-      return res.status(404).json({ message: "Slot not found" });
+    if (!slot) return res.status(404).json({ message: "Slot not found" });
+
+    if (!slot.isBooked) {
+      return res.status(400).json({ message: "Slot is not booked." });
     }
 
-    // // 4. check bookedBy match
-    // if (!slot.bookedBy || slot.bookedBy._id.toString() !== userId.toString()) {
-    //   return res.status(403).json({ message: "You can update only your booked slot" });
-    // }
-
-    // 5. status update
     slot.bookingStatus = status;
-    console.log(slot.bookedBy.email,"email k liye" )
-  if (status === 'Approved') {
-  await sendBookingStatusEmail(
-    slot.bookedBy.email,
-    `Accepted`,
-    service.name,
-    new Date().toLocaleString()   // ✅ correct
-  );
-} else {
-  await sendBookingStatusEmail(
-    slot.bookedBy.email,
-    `Rejected`,
-    service.name,
-    new Date().toLocaleString()   // ✅ correct
-  );
-}
 
-    console.log(slot.bookingStatus,"yh sfmsandfhaskldhfksaldh")
+    // If rejected, free the slot so others can book
+    if (status === 'Rejected') {
+      slot.isBooked = false;
+      slot.bookedBy = null;
+      slot.bookedAt = null;
+    }
+
     await service.save();
- 
+
+    // Send email notification to user
+    if (slot.bookedBy?.email) {
+      await sendBookingStatusEmail(
+        slot.bookedBy.email,
+        status === 'Approved' ? 'Accepted' : 'Rejected',
+        service.name,
+        new Date().toLocaleString()
+      );
+    }
+
     res.status(200).json({
-      message: "Slot status updated successfully",
-      slot
+      message: `Booking ${status} successfully`,
+      slot,
     });
 
+    // 🔔 Notify all connected clients (user's page will auto-refresh)
+    emitBookingEvent('booking:status', {
+      serviceId,
+      slotId,
+      status,
+      serviceName: service.name,
+    });
   } catch (err) {
     console.error("Error updating slot status:", err);
     res.status(500).json({ message: "Something went wrong" });
@@ -413,9 +480,9 @@ const DeliveryServiceStatus=async(req,res)=>{
       return res.status(404).json({ message: "Slot not found" });
     }
     console.log(slot,"slot")
-    // 4. check bookedBy match
-    if (!slot.bookedBy || slot.bookedBy._id.toString() === userId.toString()) {
-      return res.status(403).json({ message: "You can update only your booked slot" });
+    // 4. check: only the serviceman (service creator) can update delivery
+    if (service.createdBy.toString() !== userId.toString()) {
+      return res.status(403).json({ message: "Only the service provider can update delivery status." });
     }
     if(status==="completed"){
     await sendBookingStatusEmail(
@@ -459,6 +526,13 @@ const DeliveryServiceStatus=async(req,res)=>{
       message: "Service Delivery Status updated successfully",
       status: slot.ServiceDeliveryStatus
     });
+
+    // 🔔 Notify all connected clients
+    emitBookingEvent('delivery:status', {
+      serviceId,
+      slotId,
+      status,
+    });
   }
   catch (err) {
 
@@ -492,4 +566,106 @@ const getuserReview = async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
-module.exports = { addService, deleteSlotFromService, updateSlotBookingStatus, Allservices, bookServiceSlot, getBookingRequests,updateSlotStatus,updateService,addServiceSlot,DeliveryServiceStatus ,getuserReview};
+
+// ✅ NEW: Delete Service
+const deleteService = async (req, res) => {
+  try {
+    const { serviceId } = req.params;
+    const userId = req.user._id;
+
+    const service = await Service.findById(serviceId);
+    if (!service) {
+      return res.status(404).json({ success: false, message: "Service not found" });
+    }
+
+    // Only creator can delete
+    if (service.createdBy.toString() !== userId.toString()) {
+      return res.status(403).json({ 
+        success: false,
+        message: "You are not authorized to delete this service" 
+      });
+    }
+
+    // Check if any slot is booked and approved
+    const hasActiveBookings = service.availableSlots.some(
+      slot => slot.isBooked && slot.bookingStatus === "Approved"
+    );
+
+    if (hasActiveBookings) {
+      return res.status(400).json({ 
+        success: false,
+        message: "Cannot delete service with active approved bookings. Please complete or cancel them first." 
+      });
+    }
+
+    await Service.findByIdAndDelete(serviceId);
+    
+    res.status(200).json({ 
+      success: true,
+      message: "Service deleted successfully" 
+    });
+  } catch (err) {
+    console.error("Delete service error:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+// ✅ NEW: Get Vendor's Own Services
+const getVendorServices = async (req, res) => {
+  try {
+    const vendorId = req.user._id;
+    
+    const services = await Service.find({ createdBy: vendorId })
+      .sort({ createdAt: -1 })
+      .lean();
+    
+    // Add booking stats for each service
+    const servicesWithStats = services.map(service => {
+      const totalSlots = service.availableSlots.length;
+      const bookedSlots = service.availableSlots.filter(s => s.isBooked).length;
+      const pendingRequests = service.availableSlots.filter(
+        s => s.isBooked && s.bookingStatus === "pending"
+      ).length;
+      const completedBookings = service.availableSlots.filter(
+        s => s.ServiceDeliveryStatus === "completed"
+      ).length;
+
+      return {
+        ...service,
+        stats: {
+          totalSlots,
+          bookedSlots,
+          pendingRequests,
+          completedBookings,
+          availableSlots: totalSlots - bookedSlots
+        }
+      };
+    });
+    
+    res.status(200).json({
+      success: true,
+      message: "Your services fetched successfully",
+      data: servicesWithStats,
+      count: servicesWithStats.length
+    });
+  } catch (err) {
+    console.error("Get vendor services error:", err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+module.exports = { 
+  addService, 
+  deleteSlotFromService, 
+  updateSlotBookingStatus, 
+  Allservices, 
+  bookServiceSlot, 
+  getBookingRequests,
+  updateSlotStatus,
+  updateService,
+  addServiceSlot,
+  DeliveryServiceStatus,
+  getuserReview,
+  deleteService,        // ✅ NEW
+  getVendorServices     // ✅ NEW
+};

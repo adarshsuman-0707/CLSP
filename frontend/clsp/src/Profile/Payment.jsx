@@ -228,6 +228,7 @@ function Payment() {
   const fetchPendingPayments = async () => {
     try {
       const response = await fetchHistoryDelivered(token);
+      console.log("Fetched Services:", response);
       if (response?.completedServices) {
         const unpaid = response.completedServices.filter(
           (s) => s.paymentStatus === false
@@ -242,8 +243,8 @@ function Payment() {
   };
 
   // 🪙 Handle Razorpay Checkout
-  const openRazorpayCheckout = async (amount,ServiceId,UserId) => {
-    console.log(`${ServiceId}SErvice ID PAyemnt ${UserId} `)
+  const openRazorpayCheckout = async (amount, ServiceId) => {
+    console.log(`ServiceId: ${ServiceId}, Amount: ${amount}`);
     try {
       // 1️⃣ Create order on backend
       const orderData = await UserPaymentCreation(amount, token);
@@ -252,7 +253,7 @@ function Payment() {
         key: orderData.key_id,
         amount: orderData.amount,
         currency: orderData.currency,
-        name: "Smart Street Veggies",
+        name: "CLSP Digital Service",
         description: "Service Payment",
         order_id: orderData.order_id,
         handler: async function (response) {
@@ -265,12 +266,11 @@ function Payment() {
               ServiceId,
               token,
               amount,
-              userId:UserId
             });
 
             if (verifyResponse.success) {
-              alert("✅ Payment verified successfully!");
-              await NotificationAdd(token, {type:"payment",title:"Payment",message:"Payment done Successfully"})
+              alert("✅ Payment verified successfully! Invoice generated.");
+              await NotificationAdd(token, { type: "payment", title: "Payment", message: "Payment done Successfully" });
               fetchPendingPayments(); // refresh list
             } else {
               alert("❌ Payment verification failed!");
@@ -337,7 +337,7 @@ function Payment() {
                   </p>
                   <div className="d-grid">
                     <button
-                      onClick={() => openRazorpayCheckout(service.servicePrice,service._id,service.user)}
+                      onClick={() => openRazorpayCheckout(service.servicePrice, service._id)}
                       className="btn btn-primary btn-lg rounded-3 shadow-sm"
                     >
                       Pay Now ₹{service.servicePrice}

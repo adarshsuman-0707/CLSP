@@ -3,8 +3,8 @@ const User = require("../models/User"); // Import user model
 
 const servicemiddleware = async (req, res, next) => {
   const token = req.headers.authorization?.split(" ")[1];
-   console.log("Received Token:", req.headers.authorization);
-   console.log("Token: service :", token);
+ //  console.log("Received Token:", req.headers.authorization);
+ //  console.log("Token: service :", token);
 
     if (!token) {
         return res.status(401).json({ message: "Access Denied, No Token Provided" });

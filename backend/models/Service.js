@@ -37,6 +37,11 @@ const serviceSchema = new mongoose.Schema({
     required: true,
   },
   availableSlots: [slotSchema],
+  approvalStatus: {
+    type: String,
+    enum: ["pending", "approved", "rejected"],
+    default: "pending",
+  },
   createdAt: {
     type: Date,
     default: Date.now,

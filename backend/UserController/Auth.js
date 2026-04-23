@@ -12,22 +12,37 @@ const Login = async (req, res) => {
     const { email, password } = req.body;
     try {
         let userData = await User.findOne({ email });
-        console.log(userData._id);
+
         if (!userData) {
-            return res.status(202).send("No Data Found")
+            return res.status(404).json({ message: "No account found with this email." });
         }
 
-        let comparePass = await bcrypt.compare(password, userData.password)
-        console.log(comparePass);
+        let comparePass = await bcrypt.compare(password, userData.password);
         if (!comparePass) {
-            return res.status(201).json({message:"please enter the correct the password "});
+            return res.status(401).json({ message: "Incorrect password. Please try again." });
         }
-        const token=await generateToken(userData)
-       console.log(token);
-        return res.status(200).json({message:"Login Succesfully",token,userData})
-    } 
+
+        // Blocked user — cannot login
+        if (userData.isBlocked) {
+            return res.status(403).json({
+                message: "Your account has been suspended by the admin.",
+                code: "ACCOUNT_BLOCKED"
+            });
+        }
+
+        // Vendor (role=service) not yet verified by admin
+        if (userData.role === "service" && !userData.isVerified) {
+            return res.status(403).json({
+                message: "Your vendor account is pending admin approval. Please wait.",
+                code: "PENDING_APPROVAL"
+            });
+        }
+
+        const token = await generateToken(userData);
+        return res.status(200).json({ message: "Login Succesfully", token, userData });
+    }
     catch (error) {
-        res.status(500).send(error)
+        res.status(500).send(error);
     }
 }
 
@@ -165,7 +180,7 @@ const requestPhoneOtp = async (req, res) => {
         }
         
         const otp = generateOtp();
-        console.log("Generated Phone OTP:", otp);
+        // console.log("Generated Phone OTP:", otp);
         
         await Otp.findOneAndUpdate(
             { contact },
@@ -259,7 +274,7 @@ const Signup = async (req, res) => {
           phoneVerified: true
         });
     
-        console.log(role);
+        // console.log(role);
         await newUser.save();
     
         return res.status(201).json({ message: "Signup successful!" });

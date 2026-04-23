@@ -8,4 +8,23 @@ const apiConnector = axios.create({
   },
 });
 
+// Auto-logout on 401 (JWT expired / invalid)
+// Show blocked/pending screen on 403
+apiConnector.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error.response?.status;
+    const code   = error.response?.data?.code;
+
+    if (status === 401) {
+      localStorage.clear();
+      window.location.href = "/login";
+    } else if (status === 403 && code === "ACCOUNT_BLOCKED") {
+      localStorage.clear();
+      window.location.href = "/blocked";
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default apiConnector;

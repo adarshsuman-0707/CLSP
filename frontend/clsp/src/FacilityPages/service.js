@@ -1,300 +1,424 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import Navbar from '../Pages/NavbarProfile';
 import { serviceall, servicerBookedByUser } from '../Services/operation/serviceauthcall';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import './stylesheet/service.css'
+import 'bootstrap/dist/css/bootstrap.min.css';
 import { savedService } from '../Services/operation/SaveServiceUserCall';
-import { NotificationAdd } from '../Services/operation/Notification'; 
-const ServiceList = () => {
-  const token = localStorage.getItem('token');
-  const [services, setServices] = useState([]);
-  const [filteredServices, setFilteredServices] = useState([]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [timers, setTimers] = useState({});
-  const [selectedService, setSelectedService] = useState(null); // 👈 Popup ke liye
+import { NotificationAdd } from '../Services/operation/Notification';
+import useSSE from '../hooks/useSSE';
 
-  // Service fetch function
-  const fetchServices = async () => {
+// ── Countdown hook — derives remaining time from bookedAt timestamp ───────────
+// Returns null if slot is not pending-booked by current user
+const CANCEL_WINDOW_MS = 2 * 60 * 1000; // 2 minutes
+
+const useSlotCountdown = (slot, currentUserId) => {
+  const [remaining, setRemaining] = useState(0);
+
+  const isMyPendingSlot =
+    slot.isBooked &&
+    slot.bookingStatus === 'pending' &&
+    (slot.bookedBy?._id || slot.bookedBy)?.toString() === currentUserId;
+
+  useEffect(() => {
+    if (!isMyPendingSlot || !slot.bookedAt) {
+      setRemaining(0);
+      return;
+    }
+    const tick = () => {
+      const elapsed = Date.now() - new Date(slot.bookedAt).getTime();
+      setRemaining(Math.max(0, CANCEL_WINDOW_MS - elapsed));
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [isMyPendingSlot, slot.bookedAt]);
+
+  const mins = String(Math.floor(remaining / 60000)).padStart(2, '0');
+  const secs = String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0');
+  return { remaining, label: `${mins}:${secs}`, isMyPendingSlot };
+};
+
+// ── Single slot row ───────────────────────────────────────────────────────────
+const SlotRow = ({ slot, service, currentUserId, onBook, onCancel, actionLoading }) => {
+  const { remaining, label, isMyPendingSlot } = useSlotCountdown(slot, currentUserId);
+
+  const isApproved      = slot.bookingStatus === 'Approved';
+  const isBookedByMe    = slot.isBooked && (slot.bookedBy?._id || slot.bookedBy)?.toString() === currentUserId;
+  const isBookedByOther = slot.isBooked && !isBookedByMe;
+  const canCancel       = isBookedByMe && slot.bookingStatus === 'pending';
+  const canBook         = !slot.isBooked;
+
+  // Delivery status (set by serviceman after accepting)
+  const deliveryDone   = slot.ServiceDeliveryStatus === 'completed';
+  const deliveryFailed = slot.ServiceDeliveryStatus === 'failed';
+
+  // ── Status badge ────────────────────────────────────────────────────────────
+  let statusBadge;
+  if (isBookedByMe && deliveryFailed)
+    statusBadge = <span className="badge bg-danger">❌ Service Failed</span>;
+  else if (isBookedByMe && deliveryDone)
+    statusBadge = <span className="badge bg-primary">✅ Completed</span>;
+  else if (isApproved && isBookedByMe)
+    statusBadge = <span className="badge bg-success">✅ Accepted</span>;
+  else if (isApproved && isBookedByOther)
+    statusBadge = <span className="badge bg-secondary">Unavailable</span>;
+  else if (isBookedByMe)
+    statusBadge = <span className="badge bg-warning text-dark">⏳ Pending</span>;
+  else if (isBookedByOther)
+    statusBadge = <span className="badge bg-secondary">Booked</span>;
+  else
+    statusBadge = <span className="badge bg-success">Available</span>;
+
+  // ── Info text ───────────────────────────────────────────────────────────────
+  let infoText = null;
+  if (isMyPendingSlot && remaining > 0)
+    infoText = <span className="text-warning fw-semibold">⏱ Cancel within {label}</span>;
+  else if (isMyPendingSlot && remaining === 0)
+    infoText = <span className="text-muted small">Awaiting serviceman</span>;
+  else if (isBookedByMe && deliveryFailed)
+    infoText = <span className="text-danger small">The serviceman marked this service as failed.</span>;
+  else if (isBookedByMe && deliveryDone)
+    infoText = <span className="text-primary small">Service completed successfully.</span>;
+  else if (isApproved && isBookedByMe)
+    infoText = <span className="text-success small">Booking confirmed!</span>;
+
+  return (
+    <tr>
+      <td className="small">
+        {new Date(slot.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+      </td>
+      <td className="small">{slot.time}</td>
+      <td>{statusBadge}</td>
+      <td className="small">{infoText}</td>
+      <td className="text-end">
+        {canBook && (
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => onBook(service, slot)}
+            disabled={actionLoading}
+          >
+            📅 Book Now
+          </button>
+        )}
+        {canCancel && (
+          <button
+            className="btn btn-outline-danger btn-sm"
+            onClick={() => onCancel(service._id, slot._id)}
+            disabled={actionLoading}
+            title={remaining === 0 ? 'Cancel window expired — contact serviceman' : 'Cancel booking'}
+          >
+            ✖ Cancel
+          </button>
+        )}
+        {isApproved && isBookedByMe && !deliveryDone && !deliveryFailed && (
+          <span className="text-success small fw-semibold">Confirmed ✅</span>
+        )}
+        {isBookedByOther && (
+          <span className="text-muted small">—</span>
+        )}
+      </td>
+    </tr>
+  );
+};
+
+// ── Provider info modal ───────────────────────────────────────────────────────
+const ProviderModal = ({ service, onClose }) => (
+  <div className="modal fade show d-block" tabIndex="-1" style={{ background: 'rgba(0,0,0,0.55)' }}>
+    <div className="modal-dialog modal-dialog-centered">
+      <div className="modal-content rounded-4 border-0 shadow-lg">
+        <div className="modal-header border-0">
+          <h5 className="modal-title fw-bold">👤 Service Provider</h5>
+          <button className="btn-close" onClick={onClose} />
+        </div>
+        <div className="modal-body px-4">
+          <div className="d-flex flex-column gap-2">
+            {[
+              ['Name', `${service.createdBy?.firstname} ${service.createdBy?.lastname}`],
+              ['Email', service.createdBy?.email],
+              ['Contact', service.createdBy?.contact],
+              ['Address', service.createdBy?.address],
+              ['Pincode', service.createdBy?.pincode],
+            ].map(([label, val]) => (
+              <div key={label} className="d-flex gap-2">
+                <span className="fw-semibold text-muted" style={{ minWidth: 70 }}>{label}:</span>
+                <span>{val || '—'}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="modal-footer border-0">
+          <button className="btn btn-secondary" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// ── Main component ────────────────────────────────────────────────────────────
+const ServiceList = () => {
+  const token        = localStorage.getItem('token');
+  const currentUserId = localStorage.getItem('serviceID'); // login stores as serviceID
+
+  const [services, setServices]           = useState([]);
+  const [searchTerm, setSearchTerm]       = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [loading, setLoading]             = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [selectedService, setSelectedService] = useState(null); // provider modal
+
+  const fetchServices = useCallback(async () => {
     if (!token) return;
     setLoading(true);
     try {
       const data = await serviceall(token);
-      const serviceData = data?.services || data;
-      setServices(serviceData);
-      setFilteredServices(serviceData);
-    } catch (error) {
-      console.error('Error fetching services:', error);
-      toast.error('Failed to fetch services. Please try again later.');
+      setServices(data?.services || data || []);
+    } catch {
+      toast.error('Failed to fetch services.');
     } finally {
-      setTimeout(() => setLoading(false), 2000);
+      setLoading(false);
     }
-  };
+  }, [token]);
 
-  useEffect(() => {
-    fetchServices();
-  }, []);
+  useEffect(() => { fetchServices(); }, [fetchServices]);
 
-  // Search filter
-  useEffect(() => {
-    const filtered = services.filter(
-      (service) =>
-        service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        service.category.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredServices(filtered);
-  }, [searchTerm, services]);
+  // ── Real-time updates via SSE ────────────────────────────────────────────────
+  // When serviceman accepts/rejects → silently re-fetch so user sees updated status
+  useSSE(token, useCallback((event) => {
+    const refreshTypes = ['booking:status', 'delivery:status', 'booking:cancelled'];
+    if (refreshTypes.includes(event.type)) {
+      fetchServices();
+      if (event.type === 'booking:status') {
+        const status = event.payload?.status;
+        const name   = event.payload?.serviceName || 'Your booking';
+        if (status === 'Approved') toast.success(`✅ ${name} — booking accepted!`);
+        if (status === 'Rejected') toast.error(`❌ ${name} — booking rejected.`);
+      }
+      if (event.type === 'delivery:status') {
+        const status = event.payload?.status;
+        if (status === 'completed') toast.success('🏁 Service marked as completed!');
+        if (status === 'failed')    toast.error('❌ Service was marked as failed by the serviceman.');
+      }
+    }
+  }, [fetchServices]));
 
-  // Countdown effect
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setTimers(prev => {
-        const updated = { ...prev };
-        Object.keys(updated).forEach(slotId => {
-          if (updated[slotId] > 0) updated[slotId] -= 1;
-        });
-        return updated;
-      });
-    }, 1000);
-    return () => clearInterval(interval);
-  }, []);
+  // ── Derived list ────────────────────────────────────────────────────────────
+  const categories = useMemo(() => {
+    const cats = [...new Set(services.map((s) => s.category).filter(Boolean))];
+    return cats.sort();
+  }, [services]);
 
-  // Booking function
-  const handleBookNow = async (serviceName, serviceId, slot) => {
+  const filtered = useMemo(() => {
+    return services.filter((s) => {
+      const q = searchTerm.toLowerCase();
+      const matchSearch = !q || s.name.toLowerCase().includes(q) || s.category.toLowerCase().includes(q);
+      const matchCat = categoryFilter === 'all' || s.category === categoryFilter;
+      const hasSlots = s.availableSlots?.length > 0;
+      return matchSearch && matchCat && hasSlots;
+    });
+  }, [services, searchTerm, categoryFilter]);
+
+  // ── Book a slot ─────────────────────────────────────────────────────────────
+  const handleBook = async (service, slot) => {
+    setActionLoading(true);
     try {
-      setLoading(true)
-      const booking = {
-        serviceName,
-        date: new Date(slot.date).toDateString(),
-        time: slot.time,
-      };
-
-      const data = await servicerBookedByUser(serviceId, slot._id, token);
-      console.log("Booking Response:", data);
-
-      if (data.message.includes("booked")) {
-        toast.success(`✅ You booked ${booking.serviceName} on ${booking.date} at ${booking.time}.`);
-        setTimers(prev => ({ ...prev, [slot._id]: 150 })); // 150 seconds
-        await NotificationAdd(token, {type:"service",title:"Booking Service",message:"Service Booked Successfully"})
-        fetchServices();
-      } else if (data.message.includes("cancelled")) {
-        toast.success(`✅ You Cancelled ${booking.serviceName} on ${booking.date} at ${booking.time}.`);
-    await NotificationAdd(token, {type:"service",title:"Booking Service",message:"Service cancelled Successfully"})
-
-        setTimers(prev => ({ ...prev, [slot._id]: 0 }));
+      const res = await servicerBookedByUser(service._id, slot._id, token);
+      if (res.booked) {
+        toast.success(`✅ Booked ${service.name} on ${new Date(slot.date).toDateString()} at ${slot.time}. Awaiting confirmation.`);
+        await NotificationAdd(token, { type: 'service', title: 'Booking', message: `${service.name} booked successfully` });
         fetchServices();
       } else {
-        toast.error(data?.message || "❌ Failed to book the service.");
+        toast.error(res?.message || 'Booking failed.');
       }
-    } catch (error) {
-      console.error("Booking Error:", error);
-      toast.error("❌ Something went wrong." + error.message);
-    }
-    finally {
-      setTimeout(() => setLoading(false), 2000);
+    } catch (err) {
+      toast.error(typeof err === 'string' ? err : err?.message || 'Booking failed.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const handleCancelBooking = async (serviceId, slotId) => {
+  // ── Cancel a booking ────────────────────────────────────────────────────────
+  const handleCancel = async (serviceId, slotId) => {
+    if (!window.confirm('Cancel this booking?')) return;
+    setActionLoading(true);
     try {
-      setLoading(true)
-      const slot = filteredServices.flatMap(s => s.availableSlots).find(sl => sl._id === slotId);
-      if (!slot) return;
-      handleBookNow(slot.serviceName, serviceId, slot);
-      
-    }
-    catch (e) {
-      toast.error("Error in Cancel Booking Try Again")
-    }
-    finally {
-      setTimeout(() => setLoading(false), 2000);
+      const res = await servicerBookedByUser(serviceId, slotId, token);
+      if (res.cancelled) {
+        toast.success('Booking cancelled.');
+        await NotificationAdd(token, { type: 'service', title: 'Booking', message: 'Booking cancelled' });
+        fetchServices();
+      } else {
+        toast.error(res?.message || 'Cannot cancel.');
+      }
+    } catch (err) {
+      const msg = typeof err === 'string' ? err : err?.message || 'Cancel failed.';
+      toast.error(msg);
+    } finally {
+      setActionLoading(false);
     }
   };
 
-  const handleSaveService = async (token, serviceId,servicename) => {
+  // ── Save service ────────────────────────────────────────────────────────────
+  const handleSave = async (serviceId, serviceName) => {
     try {
-      setLoading(true)
-      const res= await savedService(token, serviceId);
-     await NotificationAdd(token, {type:"service",title:"Saved service",message:`${servicename}Service saved Successfully`})
-      
-      console.log(res)
-      if(res?.message==="Service already saved"){
-        return toast.info("Service Already Saved")
-      }
-      toast.success("Service Saved Successfully")
-    } catch (e) {
-      console.log(e)
-      toast.error(e)
+      const res = await savedService(token, serviceId);
+      if (res?.message === 'Service already saved') return toast.info('Already saved.');
+      toast.success(`${serviceName} saved!`);
+      await NotificationAdd(token, { type: 'service', title: 'Saved', message: `${serviceName} saved` });
+    } catch {
+      toast.error('Failed to save service.');
     }
-    finally {
-      setTimeout(() => setLoading(false), 2000);
-    }
-  }
+  };
 
   return (
     <>
       <Navbar />
-{loading && (
-    <div className="Loading">
-    <div id="wifi-loader">
-    <svg class="circle-outer" viewBox="0 0 86 86">
-        <circle class="back" cx="43" cy="43" r="40"></circle>
-        <circle class="front" cx="43" cy="43" r="40"></circle>
-        <circle class="new" cx="43" cy="43" r="40"></circle>
-    </svg>
-    <svg class="circle-middle" viewBox="0 0 60 60">
-        <circle class="back" cx="30" cy="30" r="27"></circle>
-        <circle class="front" cx="30" cy="30" r="27"></circle>
-    </svg>
-    <svg class="circle-inner" viewBox="0 0 34 34">
-        <circle class="back" cx="17" cy="17" r="14"></circle>
-        <circle class="front" cx="17" cy="17" r="14"></circle>
-    </svg>
-    <div class="text" data-text="Connecting"></div>
-</div></div>
-  )}
 
-  <br></br>
-  <br></br>
-      <div className="container mt-5 fade-in">
-        <h2 className="mb-4">Available Services</h2>
-
-        {/* Search bar */}
-        <div className="mb-4">
-          <input
-            type="text"
-            className="form-control"
-            placeholder="Search services by name or category..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        {/* Service list */}
-        {filteredServices.length === 0 ? (
-          <p>No services match your search.</p>
-        ) : (
-          <div className="accordion" id="servicesAccordion">
-            {filteredServices.map((service, index) => ( service.availableSlots.length > 0 && (
-              <div className="accordion-item mb-4" key={service._id}>
-                <h2 className="accordion-header" id={`heading-${index}`}>
-                  <button
-                    className="accordion-button collapsed"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target={`#collapse-${index}`}
-                    aria-expanded="false"
-                    aria-controls={`collapse-${index}`}
-                  >
-                    {service.name} | {service.category} | ₹{service.price}
-                  </button>
-                </h2>
-                <div
-                  id={`collapse-${index}`}
-                  className="accordion-collapse collapse"
-                  aria-labelledby={`heading-${index}`}
-                  data-bs-parent="#servicesAccordion"
-                >
-                  <div className="accordion-body">
-                    <div className='d-flex justify-content-between'>
-                      <p><strong>Description:</strong> {service.description}</p>
-                      <p style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}>
-                        {/* 👇 Popup button */}
-
-
-                        <button className="eye" onClick={() => setSelectedService(service)}style={{ marginLeft: '15px' }}><svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.6"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"></path>
-                          <circle cx="12" cy="12" r="3"></circle>
-                        </svg></button>
-                        <button className="like" onClick={() => handleSaveService(token, service._id,service.name)} style={{ marginLeft: '15px' }}>❤️</button>
-                      </p>
-                    </div>
-                    <p><strong>Duration:</strong> {service.duration}</p>
-                    <h6>Available Slots:</h6>
-                    <div className="row">
-                      {service.availableSlots.map((slot) => {
-                        const remaining = timers[slot._id] || 0;
-                        const minutes = Math.floor(remaining / 60);
-                        const seconds = remaining % 60;
-
-                        return (
-                          <div className="col-md-6 mb-3" key={slot._id}>
-                            <div className="card p-3 shadow-sm h-100">
-                              <p><strong>Date:</strong> {new Date(slot.date).toDateString()}</p>
-                              <p><strong>Time:</strong> {slot.time}</p>
-
-                              {remaining > 0 && (
-                                <p className="text-success">
-                                  Time left: {minutes}:{seconds < 10 ? `0${seconds}` : seconds}
-                                </p>
-                              )}
-
-                              <div className='d-flex justify-content-around gap-3'>
-                                <button
-                                  className="btn btn-primary w-50"
-                                  disabled={slot.isBooked}
-                                  onClick={() => handleBookNow(service.name, service._id, slot)}
-                                >
-                                  {slot.isBooked ? 'Booked' : 'Book Now'}
-                                </button>
-                                <button
-                                  className="btn btn-danger w-50"
-                                  disabled={!slot.isBooked}
-                                  onClick={() => handleCancelBooking(service._id, slot._id)}
-                                >
-                                  Cancel Booking
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )))}
-          </div>
-        )}
-      </div>
-
-      {/* ✅ Popup Modal */}
-      {selectedService && (
-        <div className="modal fade show d-block" tabIndex="-1" style={{ background: "rgba(0,0,0,0.6)" }}>
-          <div className="modal-dialog">
-            <div className="modal-content p-3">
-              <div className="modal-header">
-                <h5 className="modal-title">Service Created By</h5>
-                <button type="button" className="btn-close" onClick={() => setSelectedService(null)}></button>
-              </div>
-              <div className="modal-body">
-                <h6><b>First Name:</b> {selectedService.createdBy?.firstname}</h6>
-                <h6><b>Last Name:</b> {selectedService.createdBy?.lastname}</h6>
-                <h6><b>Email:</b> {selectedService.createdBy?.email}</h6>
-                <h6><b>Contact:</b> {selectedService.createdBy?.contact}</h6>
-                <h6><b>Address:</b> {selectedService.createdBy?.address}</h6>
-                <h6><b>Pincode:</b> {selectedService.createdBy?.pincode}</h6>
-              </div>
-              <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={() => setSelectedService(null)}>Close</button>
-              </div>
-            </div>
-          </div>
+      {/* Full-screen loading overlay */}
+      {(loading || actionLoading) && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="spinner-border text-light" style={{ width: '3rem', height: '3rem' }} />
         </div>
       )}
 
-      <ToastContainer />
+      <div className="container mt-5 pt-4 pb-5">
+        {/* ── Header ─────────────────────────────────────────────────────────── */}
+        <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+          <div>
+            <h4 className="fw-bold mb-0">🔧 Available Services</h4>
+            <small className="text-muted">{filtered.length} service{filtered.length !== 1 ? 's' : ''} found</small>
+          </div>
+          <button className="btn btn-outline-primary btn-sm" onClick={fetchServices} disabled={loading}>
+            🔄 Refresh
+          </button>
+        </div>
+
+        {/* ── Filters ────────────────────────────────────────────────────────── */}
+        <div className="row g-2 mb-4">
+          <div className="col-12 col-sm-6 col-md-5">
+            <input
+              type="text"
+              className="form-control"
+              placeholder="🔍 Search by name or category..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="col-6 col-sm-4 col-md-3">
+            <select
+              className="form-select"
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+            >
+              <option value="all">All Categories</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* ── Empty state ─────────────────────────────────────────────────────── */}
+        {!loading && filtered.length === 0 && (
+          <div className="text-center py-5 text-muted">
+            <div className="fs-1">🔧</div>
+            <h5 className="mt-2">No services found</h5>
+            <p>Try adjusting your search or category filter.</p>
+          </div>
+        )}
+
+        {/* ── Services accordion ──────────────────────────────────────────────── */}
+        <div className="accordion" id="servicesAccordion">
+          {filtered.map((service, index) => (
+            <div className="accordion-item mb-3 border-0 shadow-sm rounded-4 overflow-hidden" key={service._id}>
+              {/* Header */}
+              <h2 className="accordion-header">
+                <button
+                  className="accordion-button collapsed fw-semibold"
+                  type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target={`#svc-${index}`}
+                >
+                  <span className="me-2">🔧</span>
+                  <span className="me-2">{service.name}</span>
+                  <span className="badge bg-secondary me-1">{service.category}</span>
+                  <span className="badge bg-success me-1">₹{service.price}</span>
+                  <span className="badge bg-info text-dark me-1">⏱ {service.duration}</span>
+                  <span className="badge bg-primary">
+                    {service.availableSlots.filter((s) => !s.isBooked).length} free slot{service.availableSlots.filter((s) => !s.isBooked).length !== 1 ? 's' : ''}
+                  </span>
+                </button>
+              </h2>
+
+              {/* Body */}
+              <div id={`svc-${index}`} className="accordion-collapse collapse">
+                <div className="accordion-body bg-white">
+                  {/* Service meta */}
+                  <div className="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                    <p className="text-muted mb-0">{service.description}</p>
+                    <div className="d-flex gap-2">
+                      <button
+                        className="btn btn-sm btn-outline-secondary"
+                        onClick={() => setSelectedService(service)}
+                        title="View provider info"
+                      >
+                        👤 Provider
+                      </button>
+                      <button
+                        className="btn btn-sm btn-outline-danger"
+                        onClick={() => handleSave(service._id, service.name)}
+                        title="Save to favourites"
+                      >
+                        ❤️ Save
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Slots table */}
+                  <div className="table-responsive rounded-3 border">
+                    <table className="table table-sm table-hover mb-0 align-middle">
+                      <thead className="table-light">
+                        <tr>
+                          <th>Date</th>
+                          <th>Time</th>
+                          <th>Status</th>
+                          <th>Info</th>
+                          <th className="text-end">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {service.availableSlots.map((slot) => (
+                          <SlotRow
+                            key={slot._id}
+                            slot={slot}
+                            service={service}
+                            currentUserId={currentUserId}
+                            onBook={handleBook}
+                            onCancel={handleCancel}
+                            actionLoading={actionLoading}
+                          />
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Cancel window note */}
+                  <small className="text-muted d-block mt-2">
+                    ℹ️ You can cancel a pending booking within 2 minutes. Once the serviceman accepts, cancellation is not possible.
+                  </small>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Provider info modal */}
+      {selectedService && (
+        <ProviderModal service={selectedService} onClose={() => setSelectedService(null)} />
+      )}
+
+      <ToastContainer position="top-right" autoClose={4000} />
     </>
   );
 };

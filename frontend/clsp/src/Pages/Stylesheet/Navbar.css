@@ -3,26 +3,49 @@
     position: fixed;
     top: 0;
     right: -100%; /* Initially hidden */
-    width: 250px;
+    width: 280px;
+    max-width: 85vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.95);
     backdrop-filter: blur(10px);
     color: white;
-    transition: right 0.5s ease-in-out; /* Smooth slide effect */
+    transition: right 0.3s ease-in-out; /* Smooth slide effect */
     display: flex;
     flex-direction: column;
     padding: 20px;
-    z-index: 1050;
+    z-index: 1060;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.5);
   }
   
   .offcanvas-menu.show {
     right: 0; /* Slide in */
+  }
+
+  /* Backdrop overlay */
+  .offcanvas-menu::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out;
+    z-index: -1;
+  }
+
+  .offcanvas-menu.show::before {
+    opacity: 1;
+    visibility: visible;
   }
   
   .offcanvas-content {
     display: flex;
     flex-direction: column;
     align-items: start;
+    width: 100%;
   }
   
   .offcanvas-menu .close-btn {
@@ -32,6 +55,24 @@
     font-size: 24px;
     cursor: pointer;
     align-self: flex-end;
+    padding: 5px 10px;
+    transition: transform 0.2s ease;
+  }
+
+  .offcanvas-menu .close-btn:hover {
+    transform: rotate(90deg);
+  }
+
+  /* Prevent body scroll when menu is open */
+  body.offcanvas-open {
+    overflow: hidden;
+  }
+
+  /* Ensure mobile menu is hidden on desktop */
+  @media (min-width: 992px) {
+    .offcanvas-menu {
+      display: none !important;
+    }
   }
   
   /* Smooth underline animation */

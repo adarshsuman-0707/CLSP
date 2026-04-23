@@ -56,7 +56,7 @@ const ShortcutsMenuItem = () => {
               Reviews & Rating
               <span>
                 <kbd className="bg-secondary px-2 rounded">Ctrl</kbd> + 
-                <kbd className="bg-secondary px-2 rounded">V</kbd>
+                <kbd className="bg-secondary px-2 rounded">w</kbd>
               </span>
             </li>
 
@@ -128,7 +128,7 @@ const ShortcutsMenuItem = () => {
               Reviews & Rating
               <span>
                 <kbd className="bg-secondary px-2 rounded">Ctrl</kbd> + 
-                <kbd className="bg-secondary px-2 rounded">V</kbd>
+                <kbd className="bg-secondary px-2 rounded">w</kbd>
               </span>
             </li>
 
