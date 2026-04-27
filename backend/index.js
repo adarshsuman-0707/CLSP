@@ -22,13 +22,13 @@ const app=express();
 app.use(express.json())
 app.use(express.urlencoded({extended:false}));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-// app.use(express.static('uploads'))
-// app.use(cors({
-//   origin:'plumberclsp.netlify.app',
-//   methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH'],
-//   credentials: true
-// }));
-app.use(cors())
+app.use(express.static('uploads'))
+app.use(cors({
+  origin:'plumberclsp.netlify.app',
+  methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH'],
+  credentials: true
+}));
+// app.use(cors())
 app.use(helmet())
 
 //here setup for server side
