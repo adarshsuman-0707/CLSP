@@ -24,7 +24,7 @@ app.use(express.urlencoded({extended:false}));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static('uploads'))
 app.use(cors({
-  origin:'plumberclsp.netlify.app',
+  origin:'https://plumberclsp.netlify.app',
   methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH'],
   credentials: true
 }));
