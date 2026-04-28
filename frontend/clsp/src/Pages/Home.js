@@ -23,15 +23,15 @@ const Home = () => {
   }, []);
 
   return (
-    <>
+    <div style={{ width: '100%', overflowX: 'hidden' }}>
       <Navbar />
 
       {/* HERO SECTION */}
       <section className="hero-section">
-        <Carousel fade controls indicators>
+        <Carousel fade controls indicators style={{ width: '100%' }}>
           {/* Slide 1 */}
           <Carousel.Item interval={3000}>
-            <img className="d-block w-100" src={plumbing} alt="Plumbing Service 1" />
+            <img className="d-block w-100" src={plumbing} alt="Plumbing Service 1" style={{ maxWidth: '100%' }} />
             <Carousel.Caption data-aos="fade-up">
               <h1 className="fw-bold text-white">Reliable Plumbing Services</h1>
               <p>24/7 Emergency Services | Affordable | Trusted Professionals</p>
@@ -45,7 +45,7 @@ const Home = () => {
 
           {/* Slide 2 */}
           <Carousel.Item interval={3000}>
-            <img className="d-block w-100" src={plumber} alt="Plumbing Service 2" />
+            <img className="d-block w-100" src={plumber} alt="Plumbing Service 2" style={{ maxWidth: '100%' }} />
             <Carousel.Caption data-aos="fade-up">
               <h1 className="fw-bold text-white">Expert Pipe Repair</h1>
               <p>Fast & Reliable Solutions for Your Home & Office</p>
@@ -59,7 +59,7 @@ const Home = () => {
 
           {/* Slide 3 */}
           <Carousel.Item interval={3000}>
-            <img className="d-block w-100" src={carpenter} alt="Plumbing Service 3" />
+            <img className="d-block w-100" src={carpenter} alt="Plumbing Service 3" style={{ maxWidth: '100%' }} />
             <Carousel.Caption data-aos="fade-up">
               <h1 className="fw-bold text-white">Certified & Trusted Plumbers</h1>
               <p>Experienced Professionals | Guaranteed Work</p>
@@ -219,7 +219,7 @@ const Home = () => {
 
       {/* FOOTER */}
       <Footer />
-    </>
+    </div>
   );
 };
 

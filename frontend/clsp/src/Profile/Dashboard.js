@@ -11,6 +11,7 @@ import AddService from '../Components/serviceMan/AddservicePage';
 import SavedService from './SavedService';
 import Reviews from '../Profile/ServicePages/Reviews';
 import 'bootstrap/dist/css/bootstrap.min.css';
+import './Dashboard.css';
 import DashboardPage from './LandingDash';
 import {
   CDBSidebar,
@@ -45,6 +46,7 @@ import { getSupportMessages } from '../Services/operation/adminAuthCall.js';
 
 function Dashboard() {
   const role = localStorage.getItem("role");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const [activeSection, setActiveSection] = useState(() => {
     return localStorage.getItem("activeSection") || "";
@@ -91,6 +93,10 @@ function Dashboard() {
   const handleSetActiveSection = (section) => {
     setActiveSection(section);
     localStorage.setItem("activeSection", section);
+    // Close sidebar on mobile after selection
+    if (window.innerWidth < 992) {
+      setSidebarOpen(false);
+    }
   };
 
  useEffect(() => {
@@ -247,50 +253,81 @@ function Dashboard() {
 
   return (
     <>
-      <Navbar />
-      <div style={{ display: 'flex', height: '100vh', overflow: 'scroll initial' }}>
-        <CDBSidebar textColor="#fff" backgroundColor="#333">
-          <CDBSidebarHeader className="mt-5 p-3" prefix={<i className="fa fa-bars fa-large"></i>}>
-            <span>Dashboard</span>
-          </CDBSidebarHeader>
+      <Navbar onSidebarToggle={() => setSidebarOpen(!sidebarOpen)} sidebarOpen={sidebarOpen} />
+
+      {/* Backdrop for mobile */}
+      {sidebarOpen && (
+        <div
+          className="d-lg-none position-fixed w-100 h-100"
+          style={{
+            top: 0,
+            left: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 998
+          }}
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', paddingTop: '56px', maxWidth: '100vw' }}>
+        {/* Sidebar with mobile responsive behavior */}
+        <div
+          className={`sidebar-wrapper ${sidebarOpen ? 'sidebar-open' : ''}`}
+          style={{
+            position: window.innerWidth < 992 ? 'fixed' : 'relative',
+            left: window.innerWidth < 992 ? (sidebarOpen ? 0 : '-280px') : 0,
+            top: window.innerWidth < 992 ? '56px' : 0,
+            height: window.innerWidth < 992 ? 'calc(100vh - 56px)' : '100vh',
+            width: '250px',
+            minWidth: '250px',
+            transition: 'left 0.3s ease',
+            zIndex: 900,
+            overflowY: 'auto',
+            flexShrink: 0,
+          }}
+        >
+          <CDBSidebar textColor="#fff" backgroundColor="#333">
+            <CDBSidebarHeader className="mt-3 p-3" prefix={<i className="fa fa-bars fa-large"></i>}>
+              <span>Dashboard</span>
+            </CDBSidebarHeader>
 
           <CDBSidebarContent className="sidebar-content">
             {role === "user" && (
               <CDBSidebarMenu>
-                <div onClick={() => handleSetActiveSection("account")}>
+                <div onClick={() => handleSetActiveSection("account")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="user">Profile</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("services")}>
+                <div onClick={() => handleSetActiveSection("services")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="tools">Service Available</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("nearbyVendors")}>
+                <div onClick={() => handleSetActiveSection("nearbyVendors")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="map-marker-alt">Nearby Vendors</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("packages")}>
+                <div onClick={() => handleSetActiveSection("packages")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="box-open">Service Packages</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("myPackageBookings")}>
+                <div onClick={() => handleSetActiveSection("myPackageBookings")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="clipboard-list">My Pkg Bookings</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("savedService")}>
+                <div onClick={() => handleSetActiveSection("savedService")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="heart">Saved Service</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("reviews")}>
+                <div onClick={() => handleSetActiveSection("reviews")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="star">Reviews & Rating</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("notifications")}>
+                <div onClick={() => handleSetActiveSection("notifications")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="exclamation-circle">Notifications</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("payment")}>
+                <div onClick={() => handleSetActiveSection("payment")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="credit-card">Payment</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("paymentHistory")}>
+                <div onClick={() => handleSetActiveSection("paymentHistory")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="history">Payment History</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("invoices")}>
+                <div onClick={() => handleSetActiveSection("invoices")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="file-invoice">My Invoices</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("ShortCuts")}>
+                <div onClick={() => handleSetActiveSection("ShortCuts")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="info">Shortcuts</CDBSidebarMenuItem>
                 </div>
               </CDBSidebarMenu>
@@ -298,31 +335,31 @@ function Dashboard() {
 
             {role === "service" && (
               <CDBSidebarMenu>
-                <div onClick={() => handleSetActiveSection("account")}>
+                <div onClick={() => handleSetActiveSection("account")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="user">Profile</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("savedService")}>
+                <div onClick={() => handleSetActiveSection("savedService")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="plus">Add Service</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("serviceRequests")}>
+                <div onClick={() => handleSetActiveSection("serviceRequests")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="table">Booking Requests</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("locationSetup")}>
+                <div onClick={() => handleSetActiveSection("locationSetup")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="map-marker-alt">My Location</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("reviews")}>
+                <div onClick={() => handleSetActiveSection("reviews")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="star">Reviews & Rating</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("notifications")}>
+                <div onClick={() => handleSetActiveSection("notifications")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="exclamation-circle">Notifications</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("payment")}>
+                <div onClick={() => handleSetActiveSection("payment")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="history">Pay History</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("invoices")}>
+                <div onClick={() => handleSetActiveSection("invoices")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="file-invoice">Invoices</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("ShortCuts")}>
+                <div onClick={() => handleSetActiveSection("ShortCuts")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="info">Shortcuts</CDBSidebarMenuItem>
                 </div>
               </CDBSidebarMenu>
@@ -330,44 +367,43 @@ function Dashboard() {
 
             {role === "admin" && (
               <CDBSidebarMenu>
-                <div onClick={() => handleSetActiveSection("account")}>
+                <div onClick={() => handleSetActiveSection("account")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="user">Profile</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("managePackages")}>
+                <div onClick={() => handleSetActiveSection("managePackages")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="box-open">Manage Packages</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("notifications")}>
+                <div onClick={() => handleSetActiveSection("notifications")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="exclamation-circle">Notifications</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("invoices")}>
+                <div onClick={() => handleSetActiveSection("invoices")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="file-invoice">Invoices</CDBSidebarMenuItem>
                 </div>
-                {/* ── New admin sections ──────────────────────────────────── */}
-                <div onClick={() => handleSetActiveSection("userManagement")}>
+                <div onClick={() => handleSetActiveSection("userManagement")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="users">Users</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("vendorManagement")}>
+                <div onClick={() => handleSetActiveSection("vendorManagement")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="store">Vendors</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("bookingsOverview")}>
+                <div onClick={() => handleSetActiveSection("bookingsOverview")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="calendar">Bookings</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("revenueAnalytics")}>
+                <div onClick={() => handleSetActiveSection("revenueAnalytics")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="chart-bar">Analytics</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("categoryManagement")}>
+                <div onClick={() => handleSetActiveSection("categoryManagement")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="tags">Categories</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("reviewsModeration")}>
+                <div onClick={() => handleSetActiveSection("reviewsModeration")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="star">Reviews</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("paymentManagement")}>
+                <div onClick={() => handleSetActiveSection("paymentManagement")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="credit-card">Payments</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("reportsExport")}>
+                <div onClick={() => handleSetActiveSection("reportsExport")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="file-export">Reports</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("supportMessages")} style={{ position: "relative" }}>
+                <div onClick={() => handleSetActiveSection("supportMessages")} style={{ cursor: 'pointer', position: "relative" }}>
                   <CDBSidebarMenuItem icon="envelope">
                     Support
                     {unreadSupportCount > 0 && (
@@ -394,18 +430,26 @@ function Dashboard() {
                     )}
                   </CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("systemSettings")}>
+                <div onClick={() => handleSetActiveSection("systemSettings")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="cog">Settings</CDBSidebarMenuItem>
                 </div>
-                <div onClick={() => handleSetActiveSection("ShortCuts")}>
+                <div onClick={() => handleSetActiveSection("ShortCuts")} style={{ cursor: 'pointer' }}>
                   <CDBSidebarMenuItem icon="info">Shortcuts</CDBSidebarMenuItem>
                 </div>
               </CDBSidebarMenu>
             )}
           </CDBSidebarContent>
         </CDBSidebar>
+        </div>
 
-        <div style={{ flex: 1, padding: "20px", overflowY: "auto" }}>
+        {/* Main content area */}
+        <div style={{ 
+          flex: 1, 
+          padding: window.innerWidth < 768 ? "10px" : "20px", 
+          overflowY: "auto",
+          marginLeft: window.innerWidth >= 992 ? '0' : '0',
+          width: window.innerWidth < 992 ? '100%' : 'auto'
+        }}>
           {role === 'user'
             ? userRenderSection()
             : role === 'admin'
@@ -415,6 +459,15 @@ function Dashboard() {
       </div>
       {/* Footer only for non-admin roles */}
       {role !== 'admin' && <Footer />}
+      
+      {/* Mobile responsive CSS */}
+      <style jsx>{`
+        @media (max-width: 991px) {
+          .sidebar-wrapper {
+            box-shadow: 2px 0 10px rgba(0,0,0,0.3);
+          }
+        }
+      `}</style>
     </>
   );
 }

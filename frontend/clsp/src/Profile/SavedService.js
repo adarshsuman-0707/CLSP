@@ -14,7 +14,18 @@ const SavedService = () => {
             const response = await getSavedServices(token);
 
             console.log(response, " SavedService frontend");
-            setSavedServices(response.savedServices || []);
+            
+            // ✅ Filter out blocked/rejected services
+            const filteredServices = (response.savedServices || []).filter(item => {
+                const service = item.service;
+                // Only show services that are approved and not blocked
+                return service && 
+                       service.status !== 'blocked' && 
+                       service.status !== 'rejected' &&
+                       service.isApproved !== false;
+            });
+            
+            setSavedServices(filteredServices);
 
         } catch (error) {
             console.error("Error fetching saved services:", error);
@@ -77,90 +88,78 @@ const SavedService = () => {
                 <br></br>
 
                 <h2 className="text-center mt-5 mb-4 fw-bold">⭐ Your Saved Services</h2>
-                <div className="row g-4">
+                <div className="row g-3 g-md-4">
                     {savedServices.length > 0 ? (
                         savedServices.map((item) => (
-                            <div className="col-md-6 col-lg-4 fade-in" key={item.id}>
+                            <div className="col-12 col-sm-6 col-lg-4 fade-in" key={item.id}>
                                 <div
-                                    className="card shadow-lg border-0 rounded-4 h-100"
+                                    className="card shadow-sm border-0 rounded-3 h-100"
                                     style={{
-                                        transition: "transform 0.3s ease, box-shadow 0.3s ease",
-                                        cursor: "pointer",
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.transform = "scale(1.03)";
-                                        e.currentTarget.style.boxShadow = "0 8px 20px rgba(0, 0, 0, 0.15)";
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.transform = "scale(1)";
-                                        e.currentTarget.style.boxShadow = "none";
+                                        transition: "transform 0.2s ease, box-shadow 0.2s ease",
                                     }}
                                 >       
-                                      <div className="card-body p-4">
-                                        <h5 className="card-title fw-bold text-primary">
+                                      <div className="card-body p-3 p-md-4">
+                                        <h5 className="card-title fw-bold text-primary mb-2" style={{fontSize: 'clamp(1rem, 4vw, 1.25rem)'}}>
                                             {item.service.name}
                                         </h5>
-                                        <p className="card-text text-muted">
+                                        <p className="card-text text-muted small mb-3" style={{
+                                            display: '-webkit-box',
+                                            WebkitLineClamp: 2,
+                                            WebkitBoxOrient: 'vertical',
+                                            overflow: 'hidden'
+                                        }}>
                                             {item.service.description}
                                         </p>
 
-                                        <ul className="list-unstyled small">
-                                            <li>
-                                                <strong>💰 Price:</strong> ₹{item.service.price}
-                                            </li>
-                                            <li>
-                                                <strong>⏳ Duration:</strong> {item.service.duration} hrs
-                                            </li>
-                                            <li>
-                                                <strong>📂 Category:</strong> {item.service.category}
-                                            </li>
-                                        </ul>
+                                        <div className="d-flex flex-wrap gap-2 mb-3">
+                                            <span className="badge bg-primary">💰 ₹{item.service.price}</span>
+                                            <span className="badge bg-info text-dark">⏳ {item.service.duration}h</span>
+                                            <span className="badge bg-secondary">{item.service.category}</span>
+                                        </div>
 
                                         <div className="mt-3">
-                                            <h6 className="fw-bold">📅 Available Slots:</h6>
+                                            <h6 className="fw-bold small mb-2">📅 Available Slots:</h6>
                                             {item.service.availableSlots.length > 0 ? (
-                                                <ul className="list-group small">
-                                                    {item.service.availableSlots.map((slot, index) => (
-                                                        <li
+                                                <div className="d-flex flex-column gap-1" style={{maxHeight: '150px', overflowY: 'auto'}}>
+                                                    {item.service.availableSlots.slice(0, 3).map((slot, index) => (
+                                                        <div
                                                             key={index}
-                                                            className={`list-group-item d-flex justify-content-between align-items-center ${slot.isBooked
-                                                                ? "list-group-item-danger"
-                                                                : "list-group-item-success"
-                                                                }`}
+                                                            className={`p-2 rounded small ${slot.isBooked
+                                                                ? "bg-danger bg-opacity-10 text-danger"
+                                                                : "bg-success bg-opacity-10 text-success"
+                                                            }`}
                                                         >
-                                                            <span>
-                                                                {new Date(slot.date).toLocaleDateString()} -{" "}
-                                                                {slot.time}
-                                                            </span>
-                                                            <span className={slot.isBooked ? "text-danger fw-bold" : "text-success fw-bold"}>
-                                                                {slot.isBooked
-                                                                    ? "❌ This slot is booked, please wait for next allotment"
-                                                                    : "✅ Available"}
-                                                                {
-                                                                    slot.bookedBy === userID ? (
-                                                                        <div className="mt-1">
-                                                                            <small className="text-muted">
-                                                                                (Booked by: yourself)
-
-                                                                            </small>
-                                                                        </div>
-                                                                    ) : null
-                                                                }
-                                                            </span>
-                                                        </li>
+                                                            <div className="d-flex justify-content-between align-items-center flex-wrap gap-1">
+                                                                <span className="fw-medium" style={{fontSize: '0.85rem'}}>
+                                                                    {new Date(slot.date).toLocaleDateString('en-IN', {day: '2-digit', month: 'short'})} - {slot.time}
+                                                                </span>
+                                                                <span className="badge" style={{fontSize: '0.7rem'}}>
+                                                                    {slot.isBooked ? "Booked" : "Available"}
+                                                                </span>
+                                                            </div>
+                                                            {slot.bookedBy === userID && (
+                                                                <small className="text-muted d-block mt-1" style={{fontSize: '0.7rem'}}>
+                                                                    (Your booking)
+                                                                </small>
+                                                            )}
+                                                        </div>
                                                     ))}
-                                                </ul>
+                                                    {item.service.availableSlots.length > 3 && (
+                                                        <small className="text-muted text-center">+{item.service.availableSlots.length - 3} more</small>
+                                                    )}
+                                                </div>
                                             ) : (
-                                                <p className="text-muted">No slots available</p>
+                                                <p className="text-muted small mb-0">No slots available</p>
                                             )}
                                         </div>
                                     </div>
 
                                     {/* ✅ Unsave Button */}
-                                    <div className="card-footer bg-white border-0 text-center">
+                                    <div className="card-footer bg-white border-0 text-center p-2 p-md-3">
                                         <button
-                                            className="btn btn-outline-danger w-100 rounded-pill"
+                                            className="btn btn-outline-danger btn-sm w-100 rounded-pill"
                                             onClick={() => handleUnsave(item.service.id, item.service.name)}
+                                            style={{fontSize: '0.85rem'}}
                                         >
                                             ❌ Unsave
                                         </button>

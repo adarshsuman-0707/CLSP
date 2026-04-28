@@ -1,0 +1,33 @@
+/* Fix CDB Sidebar clickability */
+.sidebar-wrapper .CDBSidebarMenuItem,
+.sidebar-wrapper [class*="sidebar-menu-item"],
+.sidebar-wrapper li,
+.sidebar-wrapper a {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+  user-select: none;
+}
+
+/* Remove any overlay blocking clicks */
+.sidebar-wrapper > div {
+  pointer-events: auto !important;
+}
+
+/* Ensure sidebar items are fully clickable */
+.sidebar-wrapper div[onClick],
+.sidebar-wrapper div[onclick] {
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+/* CDB sidebar item hover */
+.sidebar-wrapper .CDBSidebarMenuItem:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Mobile sidebar shadow */
+@media (max-width: 991px) {
+  .sidebar-wrapper {
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.4);
+  }
+}

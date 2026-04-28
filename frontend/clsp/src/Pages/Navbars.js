@@ -49,10 +49,28 @@ const Navbars = () => {
     { label: "Contact", to: "contactUs", offset: -20 },
   ];
 
+  // Check if we're on home page
+  const isHomePage = location.pathname === '/';
+
+  // Handle navigation link click
+  const handleNavLinkClick = (linkTo) => {
+    if (!isHomePage) {
+      // If not on home page, navigate to home first, then scroll
+      navigate('/');
+      setTimeout(() => {
+        const element = document.getElementById(linkTo);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+    // If on home page, react-scroll Link will handle it
+  };
+
   return (
     <>
-      <Navbar expand="lg" bg="dark" variant="dark" fixed="top" className="p-3">
-        <Container>
+      <Navbar expand="lg" bg="dark" variant="dark" fixed="top" className="p-3" style={{ width: '100%' }}>
+        <Container fluid style={{ maxWidth: '100%', padding: '0 15px' }}>
           <Navbar.Brand href="/" className="fw-bold">
             🔧 CLSP
           </Navbar.Brand>
@@ -60,17 +78,28 @@ const Navbars = () => {
           {/* Desktop nav */}
           <Nav className="ms-auto d-none d-lg-flex align-items-center gap-2">
             {navLinks.map((l) => (
-              <Link
-                key={l.to}
-                to={l.to}
-                spy smooth
-                duration={500}
-                offset={l.offset}
-                className="nav-link text-white"
-                style={{ cursor: "pointer" }}
-              >
-                {l.label}
-              </Link>
+              isHomePage ? (
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  spy smooth
+                  duration={500}
+                  offset={l.offset}
+                  className="nav-link text-white"
+                  style={{ cursor: "pointer" }}
+                >
+                  {l.label}
+                </Link>
+              ) : (
+                <span
+                  key={l.to}
+                  onClick={() => handleNavLinkClick(l.to)}
+                  className="nav-link text-white"
+                  style={{ cursor: "pointer" }}
+                >
+                  {l.label}
+                </span>
+              )
             ))}
 
             {isAuthenticated ? (
@@ -163,18 +192,32 @@ const Navbars = () => {
           <button className="close-btn" onClick={() => setMobileOpen(false)}>✖</button>
           <Nav className="flex-column mt-3">
             {navLinks.map((l) => (
-              <Link
-                key={l.to}
-                to={l.to}
-                spy smooth
-                duration={500}
-                offset={l.offset}
-                className="nav-link text-white py-2"
-                onClick={() => setMobileOpen(false)}
-                style={{ cursor: "pointer" }}
-              >
-                {l.label}
-              </Link>
+              isHomePage ? (
+                <Link
+                  key={l.to}
+                  to={l.to}
+                  spy smooth
+                  duration={500}
+                  offset={l.offset}
+                  className="nav-link text-white py-2"
+                  onClick={() => setMobileOpen(false)}
+                  style={{ cursor: "pointer" }}
+                >
+                  {l.label}
+                </Link>
+              ) : (
+                <span
+                  key={l.to}
+                  onClick={() => {
+                    handleNavLinkClick(l.to);
+                    setMobileOpen(false);
+                  }}
+                  className="nav-link text-white py-2"
+                  style={{ cursor: "pointer" }}
+                >
+                  {l.label}
+                </span>
+              )
             ))}
             {isAuthenticated ? (
               <>
@@ -184,12 +227,12 @@ const Navbars = () => {
                   </span>
                 )}
                 <Nav.Link className="text-white" onClick={() => { navigate(profilePath); setMobileOpen(false); }}>Dashboard</Nav.Link>
-                {role === "user" && (
+                {/* {role === "user" && (
                   <Nav.Link className="text-white" onClick={() => { navigate("/packages"); setMobileOpen(false); }}>Packages</Nav.Link>
                 )}
                 {role === "admin" && (
                   <Nav.Link className="text-white" onClick={() => { navigate("/admin/packages"); setMobileOpen(false); }}>Manage Packages</Nav.Link>
-                )}
+                )} */}
                 <button className="btn btn-danger mt-3" onClick={handleLogout}>Logout</button>
               </>
             ) : (

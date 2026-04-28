@@ -18,9 +18,9 @@ const API_BASE = 'http://localhost:5000';
 
 /* ── small helpers ─────────────────────────────────────────────────────────── */
 const InfoRow = ({ label, value }) => (
-  <div className="row mb-3 align-items-center">
-    <div className="col-sm-4 fw-semibold text-muted small text-uppercase">{label}</div>
-    <div className="col-sm-8 text-capitalize fw-medium">{value || <span className="text-muted">—</span>}</div>
+  <div className="row mb-2 mb-md-3 align-items-center">
+    <div className="col-5 col-sm-4 fw-semibold text-muted small text-uppercase" style={{fontSize: 'clamp(0.7rem, 2vw, 0.75rem)'}}>{label}</div>
+    <div className="col-7 col-sm-8 text-capitalize fw-medium" style={{fontSize: 'clamp(0.8rem, 2.5vw, 0.9rem)', wordBreak: 'break-word'}}>{value || <span className="text-muted">—</span>}</div>
   </div>
 );
 
@@ -214,37 +214,40 @@ function AccountSettings() {
   return (
     <>
 
-      <div className="container py-4 fade-in">
-    <br>
-    </br>  <br>
-    </br>    
+      <div className="container py-4 fade-in" style={{maxWidth: '1200px'}}>
+    <br></br>  <br></br>    
         {/* ── Profile card ── */}
         <div className="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
           {/* Gradient banner */}
-          <div style={{ height: 100, background: 'linear-gradient(135deg, #0d6efd 0%, #6610f2 100%)' }} />
+          <div style={{ height: window.innerWidth < 768 ? 80 : 100, background: 'linear-gradient(135deg, #0d6efd 0%, #6610f2 100%)' }} />
 
-          <div className="card-body px-4 pb-4">
+          <div className="card-body px-3 px-md-4 pb-4">
             {/* Avatar row */}
-            <div className="d-flex justify-content-between align-items-end flex-wrap gap-3" style={{ marginTop: -50 }}>
+            <div className="d-flex justify-content-between align-items-end flex-wrap gap-3" style={{ marginTop: window.innerWidth < 768 ? -40 : -50 }}>
               {/* Avatar + upload */}
-              <div className="position-relative" style={{ width: 100 }}>
+              <div className="position-relative" style={{ width: window.innerWidth < 768 ? 80 : 100 }}>
                 <img
                   src={avatarSrc}
                   alt="Profile"
                   className="rounded-circle border border-4 border-white shadow"
-                  style={{ width: 100, height: 100, objectFit: 'cover', background: '#fff' }}
+                  style={{ 
+                    width: window.innerWidth < 768 ? 80 : 100, 
+                    height: window.innerWidth < 768 ? 80 : 100, 
+                    objectFit: 'cover', 
+                    background: '#fff' 
+                  }}
                   onError={(e) => { e.target.src = defaultAvatar; }}
                 />
                 {/* Camera overlay */}
                 <button
                   className="btn btn-sm btn-dark position-absolute bottom-0 end-0 rounded-circle p-1"
-                  style={{ width: 30, height: 30, lineHeight: 1 }}
+                  style={{ width: 28, height: 28, lineHeight: 1, fontSize: '0.8rem' }}
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadingPic}
                   title="Change profile picture"
                 >
                   {uploadingPic
-                    ? <span className="spinner-border spinner-border-sm" style={{ width: 12, height: 12 }} />
+                    ? <span className="spinner-border spinner-border-sm" style={{ width: 10, height: 10 }} />
                     : '📷'}
                 </button>
                 <input
@@ -257,22 +260,22 @@ function AccountSettings() {
               </div>
 
               {/* Action buttons */}
-              <div className="d-flex gap-2 flex-wrap">
-                <button className="btn btn-primary btn-sm px-3" onClick={() => openEditModal('profile')}>
-                  ✏️ Edit Profile
+              <div className="d-flex gap-2 flex-wrap justify-content-center justify-content-md-start w-100 w-md-auto">
+                <button className="btn btn-primary btn-sm px-2 px-md-3" style={{fontSize: 'clamp(0.75rem, 2vw, 0.875rem)'}} onClick={() => openEditModal('profile')}>
+                  ✏️ Edit
                 </button>
-                <button className="btn btn-outline-secondary btn-sm px-3" onClick={() => openEditModal('password')}>
-                  🔒 Change Password
+                <button className="btn btn-outline-secondary btn-sm px-2 px-md-3" style={{fontSize: 'clamp(0.75rem, 2vw, 0.875rem)'}} onClick={() => openEditModal('password')}>
+                  🔒 Password
                 </button>
-                <button className="btn btn-outline-danger btn-sm px-3" onClick={handleDelete}>
-                  🗑 Delete Account
+                <button className="btn btn-outline-danger btn-sm px-2 px-md-3" style={{fontSize: 'clamp(0.75rem, 2vw, 0.875rem)'}} onClick={handleDelete}>
+                  🗑 Delete
                 </button>
               </div>
             </div>
 
             {/* Name + role */}
             <div className="mt-3">
-              <h4 className="fw-bold mb-1 text-capitalize">
+              <h4 className="fw-bold mb-1 text-capitalize" style={{fontSize: 'clamp(1.1rem, 4vw, 1.5rem)'}}>
                 {user.firstname} {user.lastname}
               </h4>
               <div className="d-flex align-items-center gap-2 flex-wrap">
@@ -285,12 +288,12 @@ function AccountSettings() {
         </div>
 
         {/* ── Info grid ── */}
-        <div className="row g-4">
+        <div className="row g-3 g-md-4">
           {/* Personal info */}
-          <div className="col-lg-6">
+          <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-sm rounded-4 h-100">
-              <div className="card-body p-4">
-                <h6 className="fw-bold text-primary mb-3">👤 Personal Information</h6>
+              <div className="card-body p-3 p-md-4">
+                <h6 className="fw-bold text-primary mb-3" style={{fontSize: 'clamp(0.9rem, 3vw, 1rem)'}}>👤 Personal Information</h6>
                 <InfoRow label="Full Name" value={`${user.firstname} ${user.lastname}`} />
                 <InfoRow label="Username" value={user.username} />
                 <InfoRow label="Email" value={user.email} />
@@ -301,10 +304,10 @@ function AccountSettings() {
           </div>
 
           {/* Address info */}
-          <div className="col-lg-6">
+          <div className="col-12 col-lg-6">
             <div className="card border-0 shadow-sm rounded-4 h-100">
-              <div className="card-body p-4">
-                <h6 className="fw-bold text-primary mb-3">📍 Address Information</h6>
+              <div className="card-body p-3 p-md-4">
+                <h6 className="fw-bold text-primary mb-3" style={{fontSize: 'clamp(0.9rem, 3vw, 1rem)'}}>📍 Address Information</h6>
                 <InfoRow label="Address" value={user.address} />
                 <InfoRow label="City" value={user.city} />
                 <InfoRow label="State" value={user.state} />
@@ -327,7 +330,7 @@ function AccountSettings() {
             style={{ background: 'rgba(0,0,0,0.55)' }}
             onClick={(e) => { if (e.target === e.currentTarget) setModalOpen(false); }}
           >
-            <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable" style={{ maxWidth: 520 }}>
+            <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable" style={{ maxWidth: window.innerWidth < 576 ? '95%' : 520, margin: '1rem auto' }}>
               <div className="modal-content rounded-4 border-0 shadow-lg">
 
                 {/* Header */}

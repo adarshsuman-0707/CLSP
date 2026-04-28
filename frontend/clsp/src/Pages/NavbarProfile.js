@@ -3,7 +3,7 @@ import { Navbar, Nav, Container } from "react-bootstrap";
 import { useNavigate, useLocation } from "react-router-dom";
 import "./Stylesheet/Navbar.css";
 
-const NavbarProfile = () => {
+const NavbarProfile = ({ onSidebarToggle, sidebarOpen }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(
     localStorage.getItem("isLogin") === "true"
@@ -58,6 +58,17 @@ const NavbarProfile = () => {
     <>
       <Navbar expand="lg" bg="dark" variant="dark" fixed="top" className="p-3">
         <Container>
+          {/* Sidebar toggle - only on mobile, left of brand */}
+          {onSidebarToggle && (
+            <button
+              className="btn btn-outline-light d-lg-none me-2"
+              onClick={onSidebarToggle}
+              style={{ padding: '4px 10px', fontSize: '16px' }}
+            >
+              {sidebarOpen ? '✖' : '☰'}
+            </button>
+          )}
+
           <Navbar.Brand
             onClick={() => navigate("/")}
             style={{ cursor: "pointer" }}

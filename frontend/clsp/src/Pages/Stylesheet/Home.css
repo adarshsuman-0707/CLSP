@@ -1,9 +1,62 @@
+/* Prevent horizontal scroll and width overflow */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body, html {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+  width: 100% !important;
+  margin: 0;
+  padding: 0;
+}
+
+/* Ensure all containers stay within viewport */
+.container, .container-fluid {
+  max-width: 100% !important;
+  overflow-x: hidden !important;
+  padding-left: 15px !important;
+  padding-right: 15px !important;
+}
+
+/* Fix Bootstrap row overflow - only on page level, not navbar */
+.row {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  max-width: 100% !important;
+}
+
+/* Fix Bootstrap columns */
+[class*="col-"] {
+  padding-left: 15px !important;
+  padding-right: 15px !important;
+}
+
 .hero-section {
     position: relative;
+    width: 100% !important;
+    max-width: 100vw !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .hero-section .carousel {
+    width: 100% !important;
+    max-width: 100vw !important;
   }
   
+  .hero-section .carousel-item {
+    width: 100% !important;
+    max-width: 100vw !important;
+  }
+
   .hero-section .carousel-item img {
     height: 100vh;
+    width: 100% !important;
+    max-width: 100vw !important;
     object-fit: cover;
     filter: brightness(50%);
   }
@@ -24,7 +77,33 @@
   }
   
   section {
-    scroll-margin-top: 80px; /* Adjust based on your navbar height */
-    padding: 50px 0; /* Adds spacing inside the section */
+    scroll-margin-top: 80px;
+    padding: 50px 15px;
+    max-width: 100% !important;
+    overflow-x: hidden !important;
   }
-  
+
+  /* Mobile responsive adjustments */
+  @media (max-width: 768px) {
+    .carousel-caption h1 {
+      font-size: 2rem;
+    }
+    
+    .carousel-caption p {
+      font-size: 1rem;
+    }
+    
+    section {
+      padding: 30px 15px;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .carousel-caption h1 {
+      font-size: 1.5rem;
+    }
+    
+    .carousel-caption p {
+      font-size: 0.9rem;
+    }
+  }

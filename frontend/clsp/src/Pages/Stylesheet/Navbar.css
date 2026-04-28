@@ -1,3 +1,28 @@
+/* Navbar width fix and z-index */
+.navbar {
+  width: 100% !important;
+  max-width: 100vw !important;
+  z-index: 1050 !important;
+  /* NOTE: no overflow:hidden here - it clips the popup dropdown */
+}
+
+.navbar .container-fluid {
+  max-width: 100% !important;
+  padding-left: 15px !important;
+  padding-right: 15px !important;
+}
+
+/* Ensure navbar stays on top of everything */
+.navbar.fixed-top {
+  z-index: 1050 !important;
+}
+
+/* popup-window must render above navbar */
+.popup-window {
+  z-index: 1100 !important;
+  position: absolute !important;
+}
+
 /* Offcanvas Menu */
 .offcanvas-menu {
     position: fixed;
@@ -13,8 +38,9 @@
     display: flex;
     flex-direction: column;
     padding: 20px;
-    z-index: 1060;
+    z-index: 1060; /* Higher than navbar */
     box-shadow: -2px 0 10px rgba(0, 0, 0, 0.5);
+    overflow-y: auto; /* Enable scrolling for long menus */
   }
   
   .offcanvas-menu.show {
@@ -57,10 +83,31 @@
     align-self: flex-end;
     padding: 5px 10px;
     transition: transform 0.2s ease;
+    margin-bottom: 10px;
   }
 
   .offcanvas-menu .close-btn:hover {
     transform: rotate(90deg);
+  }
+
+  /* Mobile menu links styling */
+  .offcanvas-menu .nav-link {
+    padding: 12px 0 !important;
+    font-size: 16px !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    width: 100%;
+  }
+
+  .offcanvas-menu .badge {
+    font-size: 12px;
+    padding: 6px 12px;
+  }
+
+  .offcanvas-menu .btn {
+    width: 100%;
+    margin-top: 8px;
+    padding: 10px;
+    font-size: 15px;
   }
 
   /* Prevent body scroll when menu is open */
@@ -72,6 +119,29 @@
   @media (min-width: 992px) {
     .offcanvas-menu {
       display: none !important;
+    }
+  }
+  
+  /* Mobile-specific adjustments */
+  @media (max-width: 991px) {
+    .offcanvas-menu {
+      width: 75vw;
+      max-width: 320px;
+    }
+    
+    .offcanvas-content {
+      padding-top: 10px;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .offcanvas-menu {
+      width: 85vw;
+    }
+    
+    .offcanvas-menu .nav-link {
+      font-size: 15px !important;
+      padding: 10px 0 !important;
     }
   }
   
@@ -100,7 +170,7 @@
   
   /* On hover, expand the line smoothly */
   .offcanvas-menu a:hover::after {
-    background-color: black;
+    background-color: #00bf63;
     width: 100%;
   }
   
@@ -195,6 +265,28 @@
   --underline-border-width: 0.0625em;
   --underline-border-color: #ccc;
   --underline-margin-y: 0.3125em;
+}
+
+/* Mobile responsive adjustments for popup menu */
+@media (max-width: 768px) {
+  .popup {
+    --burger-diameter: 2.5em;
+    --nav-button-font-size: 15px;
+    --nav-button-padding-x: 0.75rem;
+  }
+  
+  .popup-window {
+    max-width: 90vw;
+    right: 0;
+    left: auto;
+  }
+}
+
+@media (max-width: 576px) {
+  .popup {
+    --burger-diameter: 2.2em;
+    --nav-button-font-size: 14px;
+  }
 }
 
 /* popup settings 👆 */

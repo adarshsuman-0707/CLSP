@@ -4,6 +4,7 @@ import './index.css';
 import App from './App';
 import "bootstrap/dist/css/bootstrap.min.css";
 import reportWebVitals from './reportWebVitals';
+import * as serviceWorkerRegistration from './serviceWorkerRegistration';
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Signup from './Pages/Signup.js'
 import Login from './Pages/Login.js';
@@ -77,3 +78,11 @@ if (container) {
     </BrowserRouter>
   );
 }
+
+// Register service worker for PWA functionality
+serviceWorkerRegistration.register();
+
+// If you want to start measuring performance in your app, pass a function
+// to log results (for example: reportWebVitals(console.log))
+// or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
+reportWebVitals();
