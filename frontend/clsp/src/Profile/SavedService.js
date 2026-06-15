@@ -7,6 +7,20 @@ const SavedService = () => {
     const [savedServices, setSavedServices] = useState([]);
     const [loading, setLoading] = useState(false);
     const userID = localStorage.getItem("serviceID");
+    
+    // Helper function to check if date is in the past
+    const isPastDate = (dateStr) => {
+        const slotDate = new Date(dateStr);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset time to start of day
+        return slotDate < today;
+    };
+    
+    // Helper function to filter future slots
+    const filterFutureSlots = (slots) => {
+        return slots.filter(slot => !isPastDate(slot.date));
+    };
+    
     const fetchSavedServices = async () => {
         try {
             setLoading(true);
@@ -25,7 +39,16 @@ const SavedService = () => {
                        service.isApproved !== false;
             });
             
-            setSavedServices(filteredServices);
+            // ✅ Filter out past date slots from each service
+            const servicesWithFutureSlots = filteredServices.map(item => ({
+                ...item,
+                service: {
+                    ...item.service,
+                    availableSlots: filterFutureSlots(item.service.availableSlots || [])
+                }
+            }));
+            
+            setSavedServices(servicesWithFutureSlots);
 
         } catch (error) {
             console.error("Error fetching saved services:", error);
@@ -149,7 +172,10 @@ const SavedService = () => {
                                                     )}
                                                 </div>
                                             ) : (
-                                                <p className="text-muted small mb-0">No slots available</p>
+                                                <div className="alert alert-warning small mb-0 py-2">
+                                                    <i className="fas fa-info-circle me-2"></i>
+                                                    Service provider has not added future slots yet.
+                                                </div>
                                             )}
                                         </div>
                                     </div>

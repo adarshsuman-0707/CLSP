@@ -8,13 +8,16 @@ const bcrypt = require('bcrypt');
 const jwt=require('jsonwebtoken');
 const generateToken = require("../utils/generateToken.js");
 const generateOtp=require("../utils/generateOtp.js")
+
 const Login = async (req, res) => {
     const { email, password } = req.body;
+    //suman@gm.com
+    //12334554
     try {
-        let userData = await User.findOne({ email });
+        let userData = await User.findOne({ email }); //
 
         if (!userData) {
-            return res.status(404).json({ message: "No account found with this email." });
+            return res.status(200).json({ message: "No account found with this email." });
         }
 
         let comparePass = await bcrypt.compare(password, userData.password);

@@ -1,6 +1,6 @@
 
-const API_BASE_URL = "https://clsp-backend.onrender.com/api/"; // Replace with your API URL
-
+// const API_BASE_URL = "https://clsp-backend.onrender.com/api/"; // Replace with your API URL
+ const API_BASE_URL="http://localhost:5001/api/"
 export const endpoint = {
     //auth 
     LOGIN: API_BASE_URL + "auth/login",
@@ -28,6 +28,10 @@ export const endpoint = {
         ADD_REVIEW:API_BASE_URL+"user/addReview",
         COMPLETED_DELIVERIES:API_BASE_URL+"user/completedDeliveries",
         REVIEW_DETAILS:API_BASE_URL+"user/getReviewDetails",
+
+    // User Support Messages
+    USER_SUPPORT_MESSAGES: API_BASE_URL + "user/support/my-messages",
+    USER_SUPPORT_SUBMIT: API_BASE_URL + "user/support/submit",
 
     //services userside show 
     FETCH_SERVICE : API_BASE_URL+"service/services",

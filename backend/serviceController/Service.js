@@ -114,6 +114,42 @@ const updateSlotBookingStatus = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+// const Allservices = async (req, res) => {
+//   try {
+//     const userRole = req.user?.role;
+//     let query = {};
+
+//     if (userRole === "user") {
+//       // Users see only APPROVED services
+//       query.approvalStatus = "approved";
+//     } else if (userRole === "service") {
+//       // Vendors see only their own services (all statuses)
+//       query.createdBy = req.user._id;
+//     }
+//     // Admin sees all services — no filter
+
+//     let data = await Service.find(query)
+//       .populate('createdBy', 'firstname lastname email phone address pincode contact isVerified isBlocked')
+//       .sort({ createdAt: -1 });
+
+//     // For users: filter out services whose vendor is blocked/unverified AFTER populate
+//     if (userRole === "user") {
+//       data = data.filter(
+//         (s) => s.createdBy && s.createdBy.isVerified === true && s.createdBy.isBlocked === false
+//       );
+//     }
+
+//     res.status(200).json({
+//       success: true,
+//       message: "Services fetched successfully",
+//       data,
+//     });
+//   } catch (err) {
+//     res.status(500).json({ success: false, error: err.message });
+//   }
+// }
+
+
 const Allservices = async (req, res) => {
   try {
     const userRole = req.user?.role;
@@ -122,32 +158,69 @@ const Allservices = async (req, res) => {
     if (userRole === "user") {
       // Users see only APPROVED services
       query.approvalStatus = "approved";
-    } else if (userRole === "service") {
-      // Vendors see only their own services (all statuses)
+    } 
+    else if (userRole === "service") {
+      // Vendors see only their own services
       query.createdBy = req.user._id;
     }
-    // Admin sees all services — no filter
+    // Admin sees all services
 
     let data = await Service.find(query)
-      .populate('createdBy', 'firstname lastname email phone address pincode contact isVerified isBlocked')
+      .populate(
+        "createdBy",
+        "firstname lastname email phone address pincode contact isVerified isBlocked"
+      )
       .sort({ createdAt: -1 });
 
-    // For users: filter out services whose vendor is blocked/unverified AFTER populate
-    if (userRole === "user") {
-      data = data.filter(
-        (s) => s.createdBy && s.createdBy.isVerified === true && s.createdBy.isBlocked === false
-      );
-    }
+    // Current date (today start time)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    data = data
+      .map((service) => {
+
+        // Remove past slots
+        service.availableSlots = service.availableSlots.filter((slot) => {
+          const slotDate = new Date(slot.date);
+          slotDate.setHours(0, 0, 0, 0);
+
+          return slotDate >= today;
+        });
+
+        return service;
+      })
+      .filter((service) => {
+
+        // Remove service if no slots available
+        if (service.availableSlots.length === 0) {
+          return false;
+        }
+
+        // Users cannot see blocked/unverified vendors
+        if (userRole === "user") {
+          return (
+            service.createdBy &&
+            service.createdBy.isVerified === true &&
+            service.createdBy.isBlocked === false
+          );
+        }
+
+        return true;
+      });
 
     res.status(200).json({
       success: true,
       message: "Services fetched successfully",
       data,
     });
+
   } catch (err) {
-    res.status(500).json({ success: false, error: err.message });
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
   }
-}
+};
 const bookServiceSlot = async (req, res) => {
   try {
     const { serviceId, slotId } = req.params;

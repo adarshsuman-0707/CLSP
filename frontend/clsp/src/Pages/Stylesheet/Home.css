@@ -1,109 +1,57 @@
-/* Prevent horizontal scroll and width overflow */
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-body, html {
-  overflow-x: hidden !important;
-  max-width: 100vw !important;
-  width: 100% !important;
-  margin: 0;
-  padding: 0;
-}
-
-/* Ensure all containers stay within viewport */
-.container, .container-fluid {
-  max-width: 100% !important;
-  overflow-x: hidden !important;
-  padding-left: 15px !important;
-  padding-right: 15px !important;
-}
-
-/* Fix Bootstrap row overflow - only on page level, not navbar */
-.row {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-  max-width: 100% !important;
-}
-
-/* Fix Bootstrap columns */
-[class*="col-"] {
-  padding-left: 15px !important;
-  padding-right: 15px !important;
-}
+/* ===== HOME PAGE STYLES ONLY ===== */
 
 .hero-section {
-    position: relative;
-    width: 100% !important;
-    max-width: 100vw !important;
-    overflow: hidden !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
+  position: relative;
+  width: 100%;
+  /* margin-left: calc(-1 * var(--bs-gutter-x, 0)); */
+padding:0px;
+  overflow: hidden;
+}
 
-  .hero-section .carousel {
-    width: 100% !important;
-    max-width: 100vw !important;
-  }
-  
-  .hero-section .carousel-item {
-    width: 100% !important;
-    max-width: 100vw !important;
-  }
+.hero-section .carousel,
+.hero-section .carousel-inner,
+.hero-section .carousel-item {
+  width: 100%;
+}
 
-  .hero-section .carousel-item img {
-    height: 100vh;
-    width: 100% !important;
-    max-width: 100vw !important;
-    object-fit: cover;
-    filter: brightness(50%);
-  }
-  
-  .carousel-caption {
-    position: absolute;
-    bottom: 20%;
-    text-align: center;
-  }
-  
-  .carousel-caption h1 {
-    font-size: 3rem;
-    font-weight: bold;
-  }
-  
-  .carousel-caption p {
-    font-size: 1.2rem;
-  }
-  
-  section {
-    scroll-margin-top: 80px;
-    padding: 50px 15px;
-    max-width: 100% !important;
-    overflow-x: hidden !important;
-  }
+.hero-section .carousel-item img {
+  height: 100vh;
+  width: 100%;
+  object-fit:fill;
+  filter: brightness(50%);
+  display: block;
+}
 
-  /* Mobile responsive adjustments */
-  @media (max-width: 768px) {
-    .carousel-caption h1 {
-      font-size: 2rem;
-    }
-    
-    .carousel-caption p {
-      font-size: 1rem;
-    }
-    
-    section {
-      padding: 30px 15px;
-    }
-  }
+.carousel-caption {
+  position: absolute;
+  bottom: 20%;
+  text-align: center;
+  left: 10%;
+  right: 10%;
+}
 
-  @media (max-width: 576px) {
-    .carousel-caption h1 {
-      font-size: 1.5rem;
-    }
-    
-    .carousel-caption p {
-      font-size: 0.9rem;
-    }
-  }
+.carousel-caption h1 {
+  font-size: 3rem;
+  font-weight: bold;
+}
+
+.carousel-caption p {
+  font-size: 1.2rem;
+}
+
+section {
+  scroll-margin-top: 80px;
+  padding: 50px 15px;
+}
+
+@media (max-width: 768px) {
+  .carousel-caption h1 { font-size: 2rem; }
+  .carousel-caption p  { font-size: 1rem; }
+  section { padding: 30px 15px; }
+}
+
+@media (max-width: 576px) {
+  .carousel-caption h1 { font-size: 1.5rem; }
+  .carousel-caption p  { font-size: 0.9rem; }
+  .hero-section .carousel-item img { height: 60vh; }
+}

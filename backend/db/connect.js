@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-require('dotenv').config(); 
+require('dotenv').config(); // Load environment variables from .env file
 const con=mongoose.connect(process.env.MONGO_URL)
 .then(()=>{
     console.log("connected to database");

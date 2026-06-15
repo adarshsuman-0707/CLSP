@@ -166,6 +166,89 @@ const getUserSavedServices = async (req, res) => {
   }
 };
 //{"message":"User saved services fetched successfully","savedServices":[{"id":"68dd6793d70f69148edebb14","savedAt":"2025-10-01T17:40:35.414Z","service":{"id":"68ab405722cc12409b294942","name":"Pipe","description":"Money","price":12343,"duration":"1","category":"Electrician","availableSlots":[{"date":"2025-09-30T00:00:00.000Z","time":"12:40","isBooked":true,"bookedBy":"68ab3e0b22cc12409b294919","bookingStatus":"Approved","_id":"68d2f09cb5a37a37b800fe8c","bookedAt":"2025-09-30T17:52:53.839Z"}]}}]}
+// ── User Support Messages ────────────────────────────────────────────────────
+const SupportMessage = require("../models/SupportMessage.js");
+
+/**
+ * GET /api/user/support/my-messages
+ * Get all support messages submitted by the logged-in user
+ * Query params: page (default 1), limit (default 10)
+ */
+const getUserSupportMessages = async (req, res) => {
+  try {
+    const userId = req.user._id;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const [messages, total] = await Promise.all([
+      SupportMessage.find({ userId })
+        .populate("repliedBy", "username email")
+        .skip(skip)
+        .limit(limit)
+        .sort({ createdAt: -1 })
+        .lean(),
+      SupportMessage.countDocuments({ userId }),
+    ]);
+
+    const pages = Math.ceil(total / limit);
+    const unreadCount = messages.filter(m => m.status === "pending").length;
+
+    return res.status(200).json({
+      success: true,
+      data: messages,
+      total,
+      page,
+      pages,
+      unreadCount,
+    });
+  } catch (error) {
+    console.error("getUserSupportMessages error:", error);
+    return res.status(500).json({ success: false, message: "Server Error", error: error.message });
+  }
+};
+
+/**
+ * POST /api/user/support/submit
+ * Submit a new support message (authenticated user)
+ * Body: { subject, message }
+ * Auto-fills senderName and senderEmail from user profile
+ */
+const submitUserSupportMessage = async (req, res) => {
+  try {
+    const { subject, message } = req.body;
+    const user = req.user;
+
+    if (!subject || !message) {
+      return res.status(400).json({
+        success: false,
+        message: "Subject and message are required",
+      });
+    }
+
+    const senderName = user.firstname 
+      ? `${user.firstname} ${user.lastname || ""}`.trim() 
+      : user.username;
+
+    const supportMessage = await SupportMessage.create({
+      senderName,
+      senderEmail: user.email,
+      subject: subject.trim(),
+      message: message.trim(),
+      userId: user._id,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Support message submitted successfully",
+      data: supportMessage,
+    });
+  } catch (error) {
+    console.error("submitUserSupportMessage error:", error);
+    return res.status(500).json({ success: false, message: "Server Error", error: error.message });
+  }
+};
+
 const removeSavedService = async (req, res) => {
   try {
     const userId = req.user._id;
@@ -325,4 +408,4 @@ const changePassword = async (req, res) => {
     }
 };
 
-module.exports = { userProfile, userDataUpdate, userDeleteProfile, UserSavedService, getUserSavedServices, removeSavedService, addReview, getCompletedDeliveries, getReviewDetails, uploadProfilePicture, changePassword };
+module.exports = { userProfile, userDataUpdate, userDeleteProfile, UserSavedService, getUserSavedServices, removeSavedService, addReview, getCompletedDeliveries, getReviewDetails, uploadProfilePicture, changePassword, getUserSupportMessages, submitUserSupportMessage };

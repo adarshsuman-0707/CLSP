@@ -15,6 +15,8 @@ const {
     getReviewDetails,
     uploadProfilePicture,
     changePassword,
+    getUserSupportMessages,
+    submitUserSupportMessage,
 } = require('../UserController/UserDash.js');
 
 const { bookServiceSlot } = require('../serviceController/Service.js');
@@ -46,5 +48,9 @@ route.get('/getReviewDetails', authMiddleware, getReviewDetails);
 
 // ── History ───────────────────────────────────────────────────────────────────
 route.get('/completedDeliveries', authMiddleware, getCompletedDeliveries);
+
+// ── Support Messages ──────────────────────────────────────────────────────────
+route.get('/support/my-messages', authMiddleware, getUserSupportMessages);
+route.post('/support/submit', authMiddleware, submitUserSupportMessage);
 
 module.exports = route;

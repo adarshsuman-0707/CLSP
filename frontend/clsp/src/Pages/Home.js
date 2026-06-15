@@ -26,47 +26,38 @@ const Home = () => {
     <div style={{ width: '100%', overflowX: 'hidden' }}>
       <Navbar />
 
-      {/* HERO SECTION */}
-      <section className="hero-section">
-        <Carousel fade controls indicators style={{ width: '100%' }}>
-          {/* Slide 1 */}
+      {/* HERO SECTION - full width, outside any container */}
+      <section className="hero-section container-fluid" style={{ marginTop: '0px' }}>
+        <Carousel fade controls indicators>
           <Carousel.Item interval={3000}>
-            <img className="d-block w-100" src={plumbing} alt="Plumbing Service 1" style={{ maxWidth: '100%' }} />
+            <img src={plumbing} alt="Plumbing Service 1" />
             <Carousel.Caption data-aos="fade-up">
               <h1 className="fw-bold text-white">Reliable Plumbing Services</h1>
               <p>24/7 Emergency Services | Affordable | Trusted Professionals</p>
               <Link to="services" smooth={true} duration={600} offset={-70}>
-                <Button variant="light" size="lg">
-                  Explore Services
-                </Button>
+                <Button variant="light" size="lg">Explore Services</Button>
               </Link>
             </Carousel.Caption>
           </Carousel.Item>
 
-          {/* Slide 2 */}
           <Carousel.Item interval={3000}>
-            <img className="d-block w-100" src={plumber} alt="Plumbing Service 2" style={{ maxWidth: '100%' }} />
+            <img src={plumber} alt="Plumbing Service 2" />
             <Carousel.Caption data-aos="fade-up">
               <h1 className="fw-bold text-white">Expert Pipe Repair</h1>
               <p>Fast & Reliable Solutions for Your Home & Office</p>
               <Link to="about" smooth={true} duration={600} offset={-70}>
-                <Button variant="light" size="lg">
-                  Get a Quote
-                </Button>
+                <Button variant="light" size="lg">Get a Quote</Button>
               </Link>
             </Carousel.Caption>
           </Carousel.Item>
 
-          {/* Slide 3 */}
           <Carousel.Item interval={3000}>
-            <img className="d-block w-100" src={carpenter} alt="Plumbing Service 3" style={{ maxWidth: '100%' }} />
+            <img src={carpenter} alt="Plumbing Service 3" />
             <Carousel.Caption data-aos="fade-up">
               <h1 className="fw-bold text-white">Certified & Trusted Plumbers</h1>
               <p>Experienced Professionals | Guaranteed Work</p>
               <Link to="contactUs" smooth={true} duration={600} offset={-20}>
-                <Button variant="light" size="lg">
-                  Contact Us
-                </Button>
+                <Button variant="light" size="lg">Contact Us</Button>
               </Link>
             </Carousel.Caption>
           </Carousel.Item>

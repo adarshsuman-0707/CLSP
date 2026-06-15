@@ -42,7 +42,14 @@ const Notification = () => {
       <br></br>
       <h3 className="mb-3">Notifications</h3>
 
-      {loading && <p>Loading...</p>}
+      { loading&&
+  <>
+      <div className="d-flex justify-content-center align-items-center vh-100">
+        <div className="spinner-border text-primary" role="status"></div>
+      </div>
+    </>
+  
+  }
       {!loading && notifications.length === 0 && (
         <div className="alert alert-info">No new notifications!</div>
       )}

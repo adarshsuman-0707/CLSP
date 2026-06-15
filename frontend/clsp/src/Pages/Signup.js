@@ -39,6 +39,8 @@ const Signup = () => {
 
   // Watch password for confirmation validation
   const password = watch("password", "");
+  const confirmPassword = watch("confirmPassword", "");
+  const passwordMatch = confirmPassword.length > 0 && password === confirmPassword;
 
   const countryList = Object.keys(countriesData);
   const stateList = selectedCountry ? countriesData[selectedCountry].states : [];
@@ -67,8 +69,8 @@ const Signup = () => {
 
   // Email OTP Verification
   const verifyEmail = async () => {
-    if (!emailOtp || emailOtp.length !== 6) {
-      toast.error("❌ Please enter a valid 6-digit OTP!");
+    if (!emailOtp || emailOtp.trim().length === 0) {
+      toast.error("❌ Please enter the OTP!");
       return;
     }
     setLoading(true);
@@ -107,8 +109,8 @@ const Signup = () => {
 
   // Phone OTP Verification
   const verifyPhone = async () => {
-    if (!phoneOtp || phoneOtp.length !== 6) {
-      toast.error("❌ Please enter a valid 6-digit OTP!");
+    if (!phoneOtp || phoneOtp.trim().length === 0) {
+      toast.error("❌ Please enter the OTP!");
       return;
     }
     setLoading(true);
@@ -129,12 +131,9 @@ const Signup = () => {
 
   // Form Submission
   const onSubmit = async (data) => {
-    if (!isEmailVerified) {
-      toast.warning("⚠️ Please verify your email first!");
-      return;
-    }
-    if (!isPhoneVerified) {
-      toast.warning("⚠️ Please verify your phone number first!");
+    // At least one of email or phone must be verified
+    if (!isEmailVerified && !isPhoneVerified) {
+      toast.warning("⚠️ Please verify your email or phone number first!");
       return;
     }
 
@@ -303,14 +302,14 @@ const Signup = () => {
                         📧 Send Email OTP
                       </button>
                     )}
-                    
+                    {/* onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} */}
                     {otpSentEmail && !isEmailVerified && (
                       <div className="mt-2">
                         <input
                           type="text"
-                          placeholder="Enter 6-digit OTP"
+                          placeholder="Enter OTP"
                           value={emailOtp}
-                          onChange={(e) => setEmailOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          onChange={(e) => setEmailOtp(e.target.value.slice(0, 6))}
                           className="form-control mb-2"
                           maxLength={6}
                         />
@@ -319,7 +318,7 @@ const Signup = () => {
                             type="button"
                             onClick={verifyEmail}
                             className="btn btn-success btn-sm flex-grow-1"
-                            disabled={loading || emailOtp.length !== 6}
+                            disabled={loading || emailOtp.trim().length === 0}
                           >
                             ✓ Verify Email
                           </button>
@@ -384,7 +383,7 @@ const Signup = () => {
                             type="button"
                             onClick={verifyPhone}
                             className="btn btn-success btn-sm flex-grow-1"
-                            disabled={loading || phoneOtp.length !== 6}
+                            disabled={loading || phoneOtp.trim().length === 0}
                           >
                             ✓ Verify Phone
                           </button>
@@ -517,7 +516,11 @@ const Signup = () => {
                           required: "Please confirm password",
                           validate: value => value === password || "Passwords do not match"
                         })}
-                        className={`form-control ${errors.confirmPassword ? 'is-invalid' : ''}`}
+                        className={`form-control ${
+                          confirmPassword.length > 0
+                            ? passwordMatch ? 'is-valid' : 'is-invalid'
+                            : ''
+                        }`}
                       />
                       <button
                         type="button"
@@ -527,14 +530,21 @@ const Signup = () => {
                         {showConfirmPassword ? '👁️' : '👁️‍🗨️'}
                       </button>
                     </div>
-                    {errors.confirmPassword && <small className="text-danger d-block">{errors.confirmPassword.message}</small>}
+                    {confirmPassword.length > 0 && (
+                      <small className={passwordMatch ? 'text-success d-block mt-1' : 'text-danger d-block mt-1'}>
+                        {passwordMatch ? '✅ Passwords match' : '❌ Passwords do not match'}
+                      </small>
+                    )}
+                    {errors.confirmPassword && confirmPassword.length === 0 && (
+                      <small className="text-danger d-block">{errors.confirmPassword.message}</small>
+                    )}
                   </div>
 
                   {/* Submit Button */}
                   <button
                     type="submit"
                     className="btn btn-primary w-100 py-2 fw-semibold"
-                    disabled={loading || !isEmailVerified || !isPhoneVerified}
+                    disabled={loading || (!isEmailVerified && !isPhoneVerified)}
                   >
                     {loading ? 'Creating Account...' : '🚀 Create Account'}
                   </button>

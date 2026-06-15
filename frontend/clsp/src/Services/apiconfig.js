@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios from "axios";// Axios instance with base URL and JSON content type
 import API_BASE_URL from "./api.js";
 
 const apiConnector = axios.create({

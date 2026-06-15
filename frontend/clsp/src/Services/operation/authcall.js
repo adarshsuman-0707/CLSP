@@ -11,9 +11,9 @@ const {
 // 🔹 Fetch Orders
 export const LoginUser = async (data) => {
   try {
-    const response = await apiConnector.post(LOGIN,data);
+    const response = await apiConnector.post(LOGIN,data);//http://localhost:5001/api/auth/login
 
-    console.log(response.data)
+    // console.log(response.data)
     return response.data;
   } catch (error) {
     throw error.response?.data || "Failed to Login user!";
@@ -125,7 +125,7 @@ export const verifyEmailOtp = async (data) => {
           Authorization: `Bearer ${token}`,
         },
       });
-      console.log(response.data);
+      // console.log(response.data);
       return response?.data;
     } catch (error) {
       throw error.response?.data ||  "Failed to ChangePassword User!";
